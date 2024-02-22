@@ -28,8 +28,8 @@ export const register= async(req, res) => {
             friends,
             
         });
-        const savedUser = newUser.save();
-        res.status(201).json({user: savedUser});
+        const savedUser = await newUser.save();
+        res.status(201).json(savedUser);
     }catch(err){
         res.status(500).json({error: err.message});
     }
