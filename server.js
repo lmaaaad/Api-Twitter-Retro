@@ -15,41 +15,41 @@ import { register } from './controllers/auth.js';
 
 
 /* CONFIGURATION */
-const __filename= fileURLToPath(import.meta.url);
-const __dirname= path.dirname(__filename);
-dotenv.config();
-const app= express();
-app.use(express.json());
-app.use(helmet());
+const __filename= fileURLToPath(import.meta.url);  //to get the current file name 
+const __dirname= path.dirname(__filename);          // to get the current directory name
+dotenv.config();  // to loads environment variables from a .env file into process.env , and we can store sensitive data there.
+const app= express();  // init express app 
+app.use(express.json());   // to parse incoming data into JSON
+app.use(helmet());  //Sets various HTTP headers to improve security
 app.use(helmet.crossOriginResourcePolicy({policy: "cross-origin"}));
-app.use(morgan("common"));
+app.use(morgan("common")); // common is a predefined log format.
 app.use(bodyParser.json({limit: "30mb", extended: true}));
 app.use(bodyParser.urlencoded({limit: "30mb", extended: true})); 
-app.use(cors());
+app.use(cors()); // Handles Cross-Origin Resource Sharing (CORS) headers.
 app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
 
 /* FILE STORAGE */
 
-const storage= multer.diskStorage(
+const storage= multer.diskStorage(              // Configures disk storage engine for multer
     {
         destination: function(req,file,cb){
-            cb(null, "public/assets");
+            cb(null, "public/assets");  //Defines the directory where uploaded files will be stored.
         },
         filename: function(req,file,cb){
-            cb(null, file.originalname) 
-        }
+            cb(null, file.originalname)   //Defines the function to determine the filename of the uploaded file
+        }                                 // in this case is the original name 
     }
 ); 
 const upload= multer(storage);
  /* ROUTES WITH FILES */
- app.post("/auth/register", upload.single("pictures"), register);
-
+ app.post("/auth/register", upload.single("pictures"), register); //Defines a route for handling user registration.
+                                                                //It expects a single file upload with the field name "pictures" and calls the register function.
  /** ROUTES */
 
-app.use("/auth", authRoutes)
+app.use("/auth", authRoutes) //Mounts routes defined in authRoutes under the /auth prefix.
 
 /* MONGOOSE SETUP */
-const PORT = process.env.PORT || 6001;
+const PORT = process.env.PORT || 6001;        //6001 is the backup port 
 mongoose.connect(process.env.MONGO_URL , {
     // useNewUrlParser: true,
     // useUnifiedTopology: true,
