@@ -2,7 +2,15 @@
 import mongoose from "mongoose";
 
 const UserSchema = new mongoose.Schema(
-    {
+    {   
+        username:{
+            type:String ,
+            unique: true, 
+            required: true,
+            min:4,
+            max:50
+        },
+
         firstName: {
             type: String,
             required: true,
@@ -38,8 +46,20 @@ const UserSchema = new mongoose.Schema(
 
         },
         
-        
+       /* followers: [{
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User' 
+        }],
 
+        following: [{
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'User' 
+        }],
+        
+        tweets: [{
+            type: mongoose.Schema.Types.ObjectId, 
+            ref: 'Tweet' }],
+            */
     } , {timestamps: true}
 );
 
