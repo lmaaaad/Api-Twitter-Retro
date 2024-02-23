@@ -1,11 +1,13 @@
 import bcrypt from "bcrypt";
 import Jwt from "jsonwebtoken";
 import User from "../models/user.js"
+/*
 import tweet from "../models/tweet.js"
 import reply from "../models/reply.js"
 import like from "../models/like.js"
 import notification from "../models/notification.js"
-import followrequest from "../models/followrequest.js"
+import followrequest from "../models/followrequest.js" 
+*/
 
 /* REGISTER USER */    
 export const register= async(req, res) => {
