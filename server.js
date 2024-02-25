@@ -14,12 +14,17 @@ import { register } from "./controllers/auth.js";
 import YAML from "yamljs";
 import { serve, setup } from "swagger-ui-express";
 
-/* CONFIGURATION */
+const app = express();
+
+/* DOCUMENTATION */
 const swaggerDocument = YAML.load("./swagger.yaml");
+app.use("/api-docs", serve, setup(swaggerDocument));
+
+/* CONFIGURATION */
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 dotenv.config();
-const app = express();
+
 app.use(express.json());
 app.use(helmet());
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
@@ -30,7 +35,6 @@ app.use(cors());
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
 /* FILE STORAGE */
-
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, "public/assets");
@@ -45,7 +49,6 @@ const upload = multer(storage);
 app.post("/auth/register", upload.single("pictures"), register);
 
 /** ROUTES */
-app.use("/api-docs", serve, setup(swaggerDocument));
 app.use("/auth", authRoutes);
 
 /* MONGOOSE SETUP */

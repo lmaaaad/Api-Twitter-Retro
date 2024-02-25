@@ -12,8 +12,8 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": "14.x",
-    "npm": ">=7"
+    "node": "18.17.0",
+    "npm": "10.4.0"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
