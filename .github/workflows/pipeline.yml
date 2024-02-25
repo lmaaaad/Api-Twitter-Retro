@@ -16,7 +16,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v2
         with:
-          node-version: "14"
+          node-version: "18.x"
 
       - name: Install dependencies
         run: npm install
@@ -39,5 +39,5 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: "22"
           script: |
-            pm2 stop 0
-            pm2 start 0
+            pm2 stop twitter-retro-api
+            pm2 start twitter-retro-api
