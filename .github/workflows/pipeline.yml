@@ -1,0 +1,43 @@
+name: NodeJs Twitter API to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v2
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: "18.x"
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: rsync deployments
+        uses: burnett01/rsync-deployments@5.2.1
+        with:
+          switches: -avzr --delete
+          path: .
+          remote_path: /var/www/twitter-retro-api/
+          remote_host: 185.216.26.172
+          remote_user: root
+          remote_key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Deploy to server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: "185.216.26.172"
+          username: "root"
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          port: "22"
+          script: |
+            pm2 stop twitter-retro-api
+            pm2 start twitter-retro-api

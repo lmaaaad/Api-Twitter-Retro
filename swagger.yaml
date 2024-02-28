@@ -1,0 +1,108 @@
+openapi: 3.0.0
+info:
+  title: Twitter-Retro API
+  version: 1.0.0
+  description: API de Twitter Retro en devéloppement...
+
+paths:
+  /auth/register:
+    post:
+      summary: Enregistrement d'un nouvel utilisateur
+      description: Permet à un utilisateur de s'enregistrer dans le système.
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                firstName:
+                  type: string
+                  description: Prénom de l'utilisateur.
+                lastName:
+                  type: string
+                  description: Nom de famille de l'utilisateur.
+                email:
+                  type: string
+                  format: email
+                  description: Adresse e-mail de l'utilisateur.
+                password:
+                  type: string
+                  format: password
+                  description: Mot de passe de l'utilisateur.
+                picturePath:
+                  type: string
+                  description: Chemin de l'image de profil de l'utilisateur.
+                friends:
+                  type: array
+                  items:
+                    type: string
+                  description: Liste d'amis de l'utilisateur.
+      responses:
+        "201":
+          description: Utilisateur crée avec succès
+        "500":
+          description: Erreur Interne
+  /auth/login:
+    post:
+      summary: Connexion de l'utilisateur
+      description: Cette route permet à un utilisateur existant de se connecter au système.
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: L'adresse e-mail de l'utilisateur.
+                password:
+                  type: string
+                  format: password
+                  description: Le mot de passe de l'utilisateur.
+      responses:
+        "200":
+          description: Connexion réussi
+        "401":
+          description: Mot de passe ou email incorrect
+        "500":
+          description: Erreur Interne
+components:
+  schemas:
+    User:
+      type: object
+      required:
+        - firstName
+        - lastName
+        - email
+      properties:
+        _id:
+          type: string
+          description: L'identifiant unique de l'utilisateur.
+        firstName:
+          type: string
+          description: Le prénom de l'utilisateur.
+        lastName:
+          type: string
+          description: Le nom de famille de l'utilisateur.
+        email:
+          type: string
+          format: email
+          description: L'adresse e-mail de l'utilisateur.
+        password:
+          type: string
+          description: Le mot de passe de l'utilisateur.
+        picturePath:
+          type: string
+          description: Le chemin de l'image de profil de l'utilisateur.
+        friends:
+          type: array
+          description: La liste des amis de l'utilisateur.
+          items:
+            type: string
