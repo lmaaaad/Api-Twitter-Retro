@@ -4,9 +4,9 @@ WORKDIR /app
    
 COPY package*.json ./
    
-RUN npm install --verbose
+RUN npm install --verbose express body-parser bcrypt cors dotenv gridfs-stream multer multer-gridfs-storage helmet morgan jsonwebtoken mongoose yamljs
    
 COPY . .
-EXPOSE 3000
+EXPOSE 3001
  
-CMD [ "npm", "run", "dev" ]
+CMD [ "npm", "start" ]

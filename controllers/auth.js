@@ -13,7 +13,7 @@ import followrequest from "../models/followrequest.js"
 export const register= async(req, res) => {
     try{
         const {
-            username,               //i added username 
+            userName,               //i added username 
             firstName,
             lastName,
             email,
@@ -24,11 +24,11 @@ export const register= async(req, res) => {
             
         } = req.body;
 
-        const salt = await bcrypt.genSalt();
-        const passwordHash = await bcrypt.hash(password, salt); 
+    const salt = await bcrypt.genSalt();
+    const passwordHash = await bcrypt.hash(password, salt);
 
         const newUser = new User({
-            username,
+            userName,
             firstName,
             lastName,
             email,
@@ -46,23 +46,19 @@ export const register= async(req, res) => {
 
 /* LOGIN */
 
-export const login = async(req,res)=>{
-    try {
-        const {
-            email, 
-            password
-        } = req.body;
-        const user = await User.findOne({email: email}); 
-        if(!user) return res.status(400).json({msg: "User doesn't exist" });
+export const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const user = await User.findOne({ email: email });
+    if (!user) return res.status(401).json({ msg: "User doesn't exist" });
 
-        const isMatch= await bcrypt.compare(password, user.password);
-        if (!isMatch) return res.status(400).json({msg: "invalid creds"});
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) return res.status(401).json({ msg: "invalid creds" });
 
-        const token = Jwt.sign({id : user._id}, process.env.JWT_SECRET); 
-        delete user.password;
-        res.status(200).json({token: token ,user:  user});
-
-    } catch (err) {
-        res.status(500).json({error: err.message});
-    }
-}
+    const token = Jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    delete user.password;
+    res.status(200).json({ token: token, user: user });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
