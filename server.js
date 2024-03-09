@@ -12,9 +12,14 @@ import { fileURLToPath } from "url";
 import { createBrotliCompress } from "zlib";
 import authRoutes from "./routes/auth.js";
 import { register } from './controllers/auth.js';
+import swaggerUi from 'swagger-ui-express';
+import YAML from 'yamljs';
 
 
 /* CONFIGURATION */
+const swaggerDocument = YAML.load('swagger.yaml');
+
+
 const __filename= fileURLToPath(import.meta.url);  //to get the current file name 
 const __dirname= path.dirname(__filename);          // to get the current directory name
 dotenv.config();  // to loads environment variables from a .env file into process.env , and we can store sensitive data there.
@@ -27,6 +32,7 @@ app.use(bodyParser.json({limit: "30mb", extended: true}));
 app.use(bodyParser.urlencoded({limit: "30mb", extended: true})); 
 app.use(cors()); // Handles Cross-Origin Resource Sharing (CORS) headers.
 app.use("/assets", express.static(path.join(__dirname, 'public/assets')));
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 /* FILE STORAGE */
 
@@ -57,3 +63,5 @@ mongoose.connect(process.env.MONGO_URL , {
 }).then(()=>{
    app.listen(PORT, ()=> console.log('server port: '+ PORT))
 }).catch((error)=> console.log('${error} did not connect '));
+
+/*Swagger Setup  */
