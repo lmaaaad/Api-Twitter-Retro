@@ -73,6 +73,58 @@ paths:
           description: Mot de passe ou email incorrect
         "500":
           description: Erreur Interne
+  /auth/forgot-password:
+    post:
+      summary: Demande de réinitialisation de mot de passe
+      description: Permet à un utilisateur d'initier le processus de réinitialisation de mot de passe en demandant un e-mail de réinitialisation.
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: L'adresse e-mail de l'utilisateur.
+      responses:
+        "200":
+          description: Email de réinitialisation envoyé avec succès
+        "404":
+          description: Utilisateur non trouvé
+        "500":
+          description: Erreur Interne
+  /auth/reset-password:
+
+    post:
+      summary: Réinitialisation de mot de passe
+      description: Permet à un utilisateur de réinitialiser son mot de passe à l'aide du token de réinitialisation.
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Le token de réinitialisation de mot de passe.
+                newPassword:
+                  type: string
+                  format: password
+                  description: Le nouveau mot de passe de l'utilisateur.
+      responses:
+        "200":
+          description: Mot de passe réinitialisé avec succès
+        "400":
+          description: Token invalide ou expiré
+        "500":
+           description: Erreur Interne
 components:
   schemas:
     User:
@@ -106,3 +158,16 @@ components:
           description: La liste des amis de l'utilisateur.
           items:
             type: string
+    ResetToken:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The reset token received in the password reset email.
+        expires:
+          type: integer
+          format: int64
+          description: The expiry timestamp of the reset token.
+        userId:
+          type: string
+          description: The ID of the user associated with the reset token.
