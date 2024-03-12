@@ -11,16 +11,14 @@ import followrequest from "../models/followrequest.js"
 
 /* REGISTER USER */    
 export const register= async(req, res) => {
+  console.log(req.body);
     try{
         const {
-            userName,               //i added username 
-            firstName,
-            lastName,
+            tag,               //i added username 
+            fullName,
             email,
             password,
-            picturePath,
-            friends,
-            tweets,
+            //picturePath,
             
         } = req.body;
 
@@ -28,18 +26,17 @@ export const register= async(req, res) => {
     const passwordHash = await bcrypt.hash(password, salt);
 
         const newUser = new User({
-            userName,
-            firstName,
-            lastName,
+            tag,
+            fullName,
             email,
             password: passwordHash,
-            picturePath,
-            friends,
+            //picturePath,
             
         });
         const savedUser = await newUser.save();
         res.status(201).json(savedUser);
     }catch(err){
+        console.log(err);
         res.status(500).json({error: err.message});
     }
 }
@@ -48,6 +45,7 @@ export const register= async(req, res) => {
 
 export const login = async (req, res) => {
   try {
+    console.log(req.body);
     const { email, password } = req.body;
     const user = await User.findOne({ email: email });
     if (!user) return res.status(401).json({ msg: "User doesn't exist" });
