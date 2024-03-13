@@ -11,6 +11,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import { createBrotliCompress } from "zlib";
 import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/users.js"
 import { register } from './controllers/auth.js';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
@@ -53,6 +54,7 @@ const upload= multer(storage);
  /** ROUTES */
 
 app.use("/auth", authRoutes) //Mounts routes defined in authRoutes under the /auth prefix.
+app.use("/users", userRoutes)
 
 /* MONGOOSE SETUP */
 const PORT = process.env.PORT || 6001;        //6001 is the backup port 
