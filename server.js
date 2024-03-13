@@ -15,13 +15,17 @@ import { register } from "./controllers/auth.js";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 
-/* CONFIGURATION */
+const app = express(); // init express app
+
+/* SWAGGER CONFIG */
 const swaggerDocument = YAML.load("swagger.yaml");
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+
+/* CONFIGURATION */
 
 const __filename = fileURLToPath(import.meta.url); //to get the current file name
 const __dirname = path.dirname(__filename); // to get the current directory name
 dotenv.config(); // to loads environment variables from a .env file into process.env , and we can store sensitive data there.
-const app = express(); // init express app
 app.use(express.json()); // to parse incoming data into JSON
 app.use(helmet()); //Sets various HTTP headers to improve security
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
@@ -30,7 +34,6 @@ app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors()); // Handles Cross-Origin Resource Sharing (CORS) headers.
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 /* FILE STORAGE */
 
