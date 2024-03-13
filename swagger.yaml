@@ -18,12 +18,12 @@ paths:
             schema:
               type: object
               properties:
-                firstName:
+                tag:
                   type: string
-                  description: Prénom de l'utilisateur.
-                lastName:
+                  description: Id tag de l'utilisateur.
+                fullName:
                   type: string
-                  description: Nom de famille de l'utilisateur.
+                  description: Nom de l'utilisateur.
                 email:
                   type: string
                   format: email
@@ -98,7 +98,6 @@ paths:
         "500":
           description: Erreur Interne
   /auth/reset-password:
-
     post:
       summary: Réinitialisation de mot de passe
       description: Permet à un utilisateur de réinitialiser son mot de passe à l'aide du token de réinitialisation.
@@ -124,7 +123,7 @@ paths:
         "400":
           description: Token invalide ou expiré
         "500":
-           description: Erreur Interne
+          description: Erreur Interne
 components:
   schemas:
     User:
@@ -137,12 +136,12 @@ components:
         _id:
           type: string
           description: L'identifiant unique de l'utilisateur.
-        firstName:
+        tag:
           type: string
-          description: Le prénom de l'utilisateur.
-        lastName:
+          description: Id tag de l'utilisateur..
+        fullName:
           type: string
-          description: Le nom de famille de l'utilisateur.
+          description: Nom de l'utilisateur.
         email:
           type: string
           format: email
