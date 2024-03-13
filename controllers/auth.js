@@ -110,7 +110,7 @@ export const requestPasswordReset = async (req, res) => {
       subject: "Password Reset Request",
       text: `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\n`
         + `Please click on the following link to reset your password:\n\n`
-        + `http://${req.headers.host}/reset-password?token=${token}\n\n`
+        + `http://${req.headers.host}/auth/reset-password?token=${token}\n\n`
         + `If you did not request this, please ignore this email, and your password will remain unchanged.\n`
     };
 
@@ -145,8 +145,9 @@ export const resetPassword = async (req, res) => {
     // Check if the token has expired
     if (resetToken.expires < Date.now()) {
       // If expired, delete the token and return error
-      await resetToken.remove();
-      return res.status(400).json({ msg: "Token has expired" });
+     // await resetToken.remove();
+     await resetToken.deleteOne({ token }); 
+     return res.status(400).json({ msg: "Token has expired" });
     }
 
     // Find the user associated with the reset token
@@ -162,7 +163,8 @@ export const resetPassword = async (req, res) => {
     user.password = passwordHash;
 
     // Remove the reset token from the database
-    await resetToken.remove();
+   // await resetToken.remove();
+   await resetToken.deleteOne({ token }); 
 
     // Save the updated user
     await user.save();
