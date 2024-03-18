@@ -13,7 +13,9 @@ export const getUser= async(req,res) => {
     }
 }
 
-//getUser friends might change it to follow system better 
+
+
+
 export const getUserFriends= async (req,res)=>{
     
     try {
