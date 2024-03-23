@@ -34,25 +34,31 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-    friends: {
-      type: Array,
-      default: [],
-    },
-
-    /* followers: [{
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'User' 
-        }],
-
-        following: [{
-            type: mongoose.Schema.Types.ObjectId, 
-            ref: 'User' 
-        }],
-        
-        tweets: [{
-            type: mongoose.Schema.Types.ObjectId, 
-            ref: 'Tweet' }],
-            */
+   
+    tweets: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Tweet",
+        autopopulate: {
+          maxDepth: 2,
+        },
+      },
+    ],
+    following: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        autopopulate: { select: "username _id", maxDepth: 1 },
+      },
+    ],
+    followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        autopopulate: { select: "username _id", maxDepth: 1 },
+      },
+    ],
+    notifications: Array,
   },
   { timestamps: true }
 );
