@@ -4,6 +4,7 @@ import Router from "express";
 import {
     getUser,
     getUserFriends,
+    updateUser,
    // addRemoveFriends,
     
 } from "../controllers/users.js";
@@ -16,6 +17,9 @@ const router = express.Router();
 
 router.get("/:id", verifyToken , getUser);
 router.get("/:id/followers", verifyToken , getUserFriends);
+
+//UPDATE USER 
+router.patch("/:id", verifyToken, updateUser);
 
 
 // UPDATE
