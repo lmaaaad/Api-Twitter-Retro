@@ -48,14 +48,14 @@ const UserSchema = new mongoose.Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        autopopulate: { select: "username _id", maxDepth: 1 },
+        autopopulate: { select: "tag", maxDepth: 1 },
       },
     ],
     followers: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",
-        autopopulate: { select: "username _id", maxDepth: 1 },
+        autopopulate: { select: "tag", maxDepth: 1 },
       },
     ],
     notifications: Array,
