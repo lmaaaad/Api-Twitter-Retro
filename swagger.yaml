@@ -124,6 +124,127 @@ paths:
           description: Token invalide ou expiré
         "500":
           description: Erreur Interne
+ 
+  /tweets:
+    get:
+      summary: Retrieve all tweets
+      description: Get a list of all tweets in the system
+      tags: 
+        - Tweets
+      parameters:
+        - name: page
+          in: query
+          description: number of the Page to retrieve (default: 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: pageSize
+          in: query
+          description: Number of tweets per page (default: 20)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: skip
+          in: query
+          description: Number of tweets to skip per page (default: 0)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: A list of tweets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tweet'
+    post:
+      summary: Create a new tweet
+      description: Create a new tweet in the system
+      tags: 
+        - Tweets
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewTweet'
+      responses:
+        '201':
+          description: The created tweet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tweet'
+
+  /tweets/{tweetId}:
+    get:
+      summary: Retrieve a specific tweet
+      description: Get information about a specific tweet by its ID
+      tags: 
+        - Tweets
+
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          description: The ID of the tweet to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested tweet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tweet'
+    patch:
+      summary: Update a specific tweet
+      description: Update an existing tweet by its ID
+      tags: 
+        - Tweets
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          description: The ID of the tweet to update
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdatedTweet'
+      responses:
+        '200':
+          description: The updated tweet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tweet'
+    delete:
+      summary: Delete a specific tweet
+      description: Delete a tweet from the system by its ID
+      tags: 
+        - Tweets
+      parameters:
+        - name: tweetId
+          in: path
+          required: true
+          description: The ID of the tweet to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Tweet deleted successfully
+
 components:
   schemas:
     User:
@@ -170,3 +291,39 @@ components:
         userId:
           type: string
           description: The ID of the user associated with the reset token.
+
+    Tweet:
+      type: object
+      properties:
+        body:
+          type: string
+        type:
+          type: string
+          enum:
+            - tweet
+            - reply
+            - retweet
+          required: true
+        originalTweet:
+          type: string
+          format: uuid
+        retweets:
+          type: array
+          items:
+            type: string
+            format: uuid
+        author:
+          type: string
+          format: uuid
+        likes:
+          type: array
+          items:
+            type: string
+            format: uuid
+        replies:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - type
