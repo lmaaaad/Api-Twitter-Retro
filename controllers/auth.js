@@ -59,6 +59,8 @@ export const login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ msg: "invalid creds" });
 
     const token = Jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    await User.findByIdAndUpdate(user._id, { $set: { token } }); //add token to user. 
+
     delete user.password;
     res.status(200).json({ token: token, user: user });
   } catch (err) {
@@ -127,7 +129,23 @@ export const requestPasswordReset = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+/*logout*/
+export const logout = async (req, res) => {
+  try {
+    const token = req.header("Authorization");
+    if (!token) {
+      return res.status(403).send("Access Denied");
+    }
 
+    // Find the user by token and update the token field to null
+    await User.findOneAndUpdate({ token }, { $set: { token: null } });
+
+    res.status(200).json({ message: "Logout successful" });
+  } catch (err) {
+    console.error("Unexpected logout error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 /* Reset Password */
 export const resetPassword = async (req, res) => {
   try {
@@ -172,4 +190,6 @@ export const resetPassword = async (req, res) => {
     console.error("Reset password error:", err); // Log the error for debugging
     res.status(500).json({ error: "Internal server error" });
   }
+
+  
 };

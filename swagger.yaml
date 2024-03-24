@@ -124,6 +124,19 @@ paths:
           description: Token invalide ou expiré
         "500":
           description: Erreur Interne
+  /auth/logout:
+    post:
+      summary: Déconnexion de l'utilisateur
+      description: Cette route permet à un utilisateur connecté de se déconnecter du système.
+      tags:
+        - Authentification
+      responses:
+        "403":
+          description: Accès interdit
+        "200":
+          description: Déconnexion réussie
+        "500":
+          description: Erreur Interne
 components:
   schemas:
     User:

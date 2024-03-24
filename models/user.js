@@ -34,7 +34,9 @@ const UserSchema = new mongoose.Schema(
       type: String,
       default: "",
     },
-   
+    token: {
+      type: String,           // added filed to Store JWT token here
+    },
     tweets: [
       {
         type: mongoose.Schema.Types.ObjectId,
