@@ -132,14 +132,17 @@ export const requestPasswordReset = async (req, res) => {
 /*logout*/
 export const logout = async (req, res) => {
   try {
-    const token = req.header("Authorization");
+    const token = req.header("Authorization").split(" ")[1];
     if (!token) {
       return res.status(403).send("Access Denied");
     }
 
     // Find the user by token and update the token field to null
-    await User.findOneAndUpdate({ token }, { $set: { token: null } });
+    const user = await User.findOneAndUpdate({ token }, { token: null });
 
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
     res.status(200).json({ message: "Logout successful" });
   } catch (err) {
     console.error("Unexpected logout error:", err);
