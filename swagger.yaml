@@ -137,6 +137,47 @@ paths:
           description: Déconnexion réussie
         "500":
           description: Erreur Interne
+  /users/follow/{userId}:
+    post:
+      summary: Follow a user
+      description: Follow another user on the platform.
+      tags:
+        - User
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID of the user to follow.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User followed successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+
+  /users/unfollow/{userId}:
+    post:
+      summary: Unfollow a user
+      description: Unfollow a user on the platform.
+      tags:
+        - User
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          description: ID of the user to unfollow.
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User unfollowed successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error        
 components:
   schemas:
     User:
