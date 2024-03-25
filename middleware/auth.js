@@ -4,12 +4,14 @@ import User from "../models/user.js"; // Import your User model
 export const verifyToken = async (req, res, next) => {
     try {
         // Check if the request is for logout
+        
         if (req.path === '/auth/logout') {
             // Skip token verification for logout endpoint
             return next();
         }
 
-        let token = req.header("Authorization");
+        
+        let token = req.header("Auth");
 
         if (!token) {
             res.status(403).send("Access Denied");

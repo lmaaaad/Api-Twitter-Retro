@@ -11,6 +11,7 @@ import { fileURLToPath } from "url";
 import { createBrotliCompress } from "zlib";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
+import tweetsRoutes from "./routes/tweets.js"
 import { register } from "./controllers/auth.js";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
@@ -55,7 +56,8 @@ app.post("/auth/register", upload.single("pictures"), register); //Defines a rou
 /** ROUTES */
 
 app.use("/auth", authRoutes); //Mounts routes defined in authRoutes under the /auth prefix.
-app.use("/users", userRoutes);
+app.use("/users", userRoutes); //Mounts routes defined in userRoutes under the /users prefix.
+app.use("/tweets", tweetsRoutes); //Mounts routes defined in tweetsRoutes under the /tweets prefix.
 
 /* MONGOOSE SETUP */
 const PORT = process.env.PORT || 6001; //6001 is the backup port
