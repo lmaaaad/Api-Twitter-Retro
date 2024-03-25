@@ -132,6 +132,12 @@ paths:
       tags: 
         - Tweets
       parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+          
+          type: string 
         - name: page
           in: query
           description: number of the Page to retrieve (default: 1)
@@ -166,6 +172,11 @@ paths:
     post:
       summary: Create a new tweet
       description: Create a new tweet in the system
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true 
       tags: 
         - Tweets
 
@@ -174,7 +185,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewTweet'
+              $ref: '#/components/schemas/Tweet'
       responses:
         '201':
           description: The created tweet
@@ -191,6 +202,10 @@ paths:
         - Tweets
 
       parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
         - name: tweetId
           in: path
           required: true
@@ -210,6 +225,10 @@ paths:
       tags: 
         - Tweets
       parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
         - name: tweetId
           in: path
           required: true
@@ -221,7 +240,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdatedTweet'
+              $ref: '#/components/schemas/Tweet'
       responses:
         '200':
           description: The updated tweet
@@ -235,6 +254,10 @@ paths:
       tags: 
         - Tweets
       parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
         - name: tweetId
           in: path
           required: true
