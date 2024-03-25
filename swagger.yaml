@@ -355,6 +355,17 @@ components:
           description: La liste des amis de l'utilisateur.
           items:
             type: string
+        followers:
+          type: array
+          description: La liste des abonnés de l'utilisateur.
+          items:  
+            type: string
+        following: 
+          type: array   
+          description: La liste des abonnés de l'utilisateur.
+          items:  
+            type: string
+
     ResetToken:
       type: object
       properties:
