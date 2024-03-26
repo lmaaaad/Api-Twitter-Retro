@@ -18,12 +18,12 @@ paths:
             schema:
               type: object
               properties:
-                firstName:
+                tag:
                   type: string
-                  description: Prénom de l'utilisateur.
-                lastName:
+                  description: Id tag de l'utilisateur.
+                fullName:
                   type: string
-                  description: Nom de famille de l'utilisateur.
+                  description: Nom de l'utilisateur.
                 email:
                   type: string
                   format: email
@@ -73,6 +73,201 @@ paths:
           description: Mot de passe ou email incorrect
         "500":
           description: Erreur Interne
+  /auth/forgot-password:
+    post:
+      summary: Demande de réinitialisation de mot de passe
+      description: Permet à un utilisateur d'initier le processus de réinitialisation de mot de passe en demandant un e-mail de réinitialisation.
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  description: L'adresse e-mail de l'utilisateur.
+      responses:
+        "200":
+          description: Email de réinitialisation envoyé avec succès
+        "404":
+          description: Utilisateur non trouvé
+        "500":
+          description: Erreur Interne
+  /auth/reset-password:
+    post:
+      summary: Réinitialisation de mot de passe
+      description: Permet à un utilisateur de réinitialiser son mot de passe à l'aide du token de réinitialisation.
+      tags:
+        - Authentification
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                token:
+                  type: string
+                  description: Le token de réinitialisation de mot de passe.
+                newPassword:
+                  type: string
+                  format: password
+                  description: Le nouveau mot de passe de l'utilisateur.
+      responses:
+        "200":
+          description: Mot de passe réinitialisé avec succès
+        "400":
+          description: Token invalide ou expiré
+        "500":
+          description: Erreur Interne
+ 
+  /tweets:
+    get:
+      summary: Retrieve all tweets
+      description: Get a list of all tweets in the system
+      tags: 
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+          
+          type: string 
+        - name: page
+          in: query
+          description: number of the Page to retrieve (default: 1)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+        - name: pageSize
+          in: query
+          description: Number of tweets per page (default: 20)
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+        - name: skip
+          in: query
+          description: Number of tweets to skip per page (default: 0)
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+      responses:
+        '200':
+          description: A list of tweets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tweet'
+    post:
+      summary: Create a new tweet
+      description: Create a new tweet in the system
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true 
+      tags: 
+        - Tweets
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tweet'
+      responses:
+        '201':
+          description: The created tweet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tweet'
+
+  /tweets/{tweetId}:
+    get:
+      summary: Retrieve a specific tweet
+      description: Get information about a specific tweet by its ID
+      tags: 
+        - Tweets
+
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          required: true
+          description: The ID of the tweet to retrieve
+          schema:
+            type: string
+      responses:
+        '200':
+          description: The requested tweet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tweet'
+    patch:
+      summary: Update a specific tweet
+      description: Update an existing tweet by its ID
+      tags: 
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          required: true
+          description: The ID of the tweet to update
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Tweet'
+      responses:
+        '200':
+          description: The updated tweet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tweet'
+    delete:
+      summary: Delete a specific tweet
+      description: Delete a tweet from the system by its ID
+      tags: 
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          required: true
+          description: The ID of the tweet to delete
+          schema:
+            type: string
+      responses:
+        '204':
+          description: Tweet deleted successfully
+
 components:
   schemas:
     User:
@@ -85,12 +280,12 @@ components:
         _id:
           type: string
           description: L'identifiant unique de l'utilisateur.
-        firstName:
+        tag:
           type: string
-          description: Le prénom de l'utilisateur.
-        lastName:
+          description: Id tag de l'utilisateur..
+        fullName:
           type: string
-          description: Le nom de famille de l'utilisateur.
+          description: Nom de l'utilisateur.
         email:
           type: string
           format: email
@@ -106,3 +301,52 @@ components:
           description: La liste des amis de l'utilisateur.
           items:
             type: string
+    ResetToken:
+      type: object
+      properties:
+        token:
+          type: string
+          description: The reset token received in the password reset email.
+        expires:
+          type: integer
+          format: int64
+          description: The expiry timestamp of the reset token.
+        userId:
+          type: string
+          description: The ID of the user associated with the reset token.
+
+    Tweet:
+      type: object
+      properties:
+        body:
+          type: string
+        type:
+          type: string
+          enum:
+            - tweet
+            - reply
+            - retweet
+          required: true
+        originalTweet:
+          type: string
+          format: uuid
+        retweets:
+          type: array
+          items:
+            type: string
+            format: uuid
+        author:
+          type: string
+          format: uuid
+        likes:
+          type: array
+          items:
+            type: string
+            format: uuid
+        replies:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+        - type

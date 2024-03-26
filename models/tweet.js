@@ -1,18 +1,54 @@
 import mongoose from "mongoose";
+import autopopulate from "mongoose-autopopulate";
 
-const tweetSchema = new mongoose.Schema({
+const { Schema, model } = mongoose;
 
+const tweetSchema = new Schema(
+  {
+    body: {
+      type: String,
+    },
+    type: {
+      type: String,
+      enum: ["tweet", "reply", "retweet"],
+      required: true,
+    },
+    originalTweet: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Tweet",
+      autopopulate: true,
+    },
+    retweets: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Tweet",
+      },
+    ],
     author: {
-        type: mongoose.Schema.Types.ObjectId, 
-        ref: 'User' 
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      autopopulate: { select: "tag fullNam ", maxDepth: 2 },
     },
-        
-    content: String,
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        autopopulate: { select: "tag", maxDepth: 1 },
+      },
+    ],
+    replies: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Tweet",
+        autopopulate: { maxDepth: 1 },
+      },
+    ],
+  },
+  { timestamps: true },
+  { collection: "tweets" }
+);
 
-    },
+tweetSchema.plugin(autopopulate);
 
-    {timestamps: true});
-  
-  const Tweet = mongoose.model('Tweet', tweetSchema);
-  
-  module.exports = Tweet;
+const Tweet = model("Tweet", tweetSchema);
+export default Tweet;
