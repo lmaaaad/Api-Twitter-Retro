@@ -5,6 +5,7 @@ import {
     getUser,
     getUserFriends,
     updateUser,
+    searchUser
    // addRemoveFriends,
     
 } from "../controllers/users.js";
@@ -20,6 +21,9 @@ router.get("/:id/followers", verifyToken , getUserFriends);
 
 //UPDATE USER 
 router.patch("/:id", verifyToken, updateUser);
+
+//SEARCH USER
+router.get("/", verifyToken,searchUser);    
 
 
 // UPDATE
