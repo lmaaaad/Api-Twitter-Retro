@@ -3,7 +3,6 @@ import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import multer from "multer";
 import helmet from "helmet";
 import morgan from "morgan";
 import path from "path";
@@ -12,13 +11,13 @@ import { createBrotliCompress } from "zlib";
 import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
 import chatRoutes from "./routes/chatRoutes.js";
+import messageRoutes from "./routes/messageRouter.js";
 import tweetsRoutes from "./routes/tweets.js";
-import { register } from "./controllers/auth.js";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
+import { Server } from "socket.io";
 
 const app = express(); // init express app
-
 /* SWAGGER CONFIG */
 const swaggerDocument = YAML.load("swagger.yaml");
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
@@ -39,27 +38,15 @@ app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
 /* FILE STORAGE */
 
-const storage = multer.diskStorage(
-  // Configures disk storage engine for multer
-  {
-    destination: function (req, file, cb) {
-      cb(null, "public/assets"); //Defines the directory where uploaded files will be stored.
-    },
-    filename: function (req, file, cb) {
-      cb(null, file.originalname); //Defines the function to determine the filename of the uploaded file
-    }, // in this case is the original name
-  }
-);
-const upload = multer(storage);
-/* ROUTES WITH FILES */
-app.post("/auth/register", upload.single("pictures"), register); //Defines a route for handling user registration.
+ //Defines a route for handling user registration.
 //It expects a single file upload with the field name "pictures" and calls the register function.
 /** ROUTES */
 
 app.use("/auth", authRoutes); //Mounts routes defined in authRoutes under the /auth prefix.
 app.use("/users", userRoutes); //Mounts routes defined in userRoutes under the /users prefix.
-app.use("/tweets", tweetsRoutes);
-app.use("/api/chat", chatRoutes); //Mounts routes defined in tweetsRoutes under the /tweets prefix.
+app.use("/tweets", tweetsRoutes); //Mounts routes defined in tweetsRoutes under the /tweets prefix.
+app.use("/api/chat", chatRoutes);
+app.use("/api/message", messageRoutes);
 
 /* MONGOOSE SETUP */
 const PORT = process.env.PORT || 6001; //6001 is the backup port
@@ -72,3 +59,4 @@ mongoose
     app.listen(PORT, () => console.log("server port: " + PORT));
   })
   .catch((error) => console.log("${error} did not connect "));
+

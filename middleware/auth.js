@@ -17,7 +17,7 @@ export const verifyToken = async (req, res, next) => {
       //console.log(decoded);
 
       req.user = await User.findById(decoded.id).select("-password");
-      //console.log(req.user._id);
+      console.log(req.user._id);
       next();
     } catch (error) {
       res.status(401).send("Not authorized, token failed");

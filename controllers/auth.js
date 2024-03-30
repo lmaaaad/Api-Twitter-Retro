@@ -15,36 +15,36 @@ import followrequest from "../models/followrequest.js"
 */
 
 /* REGISTER USER */    
-export const register= async(req, res) => {
-  console.log(req.body);
-    try{
-        const {
-            tag,               //i added username 
-            fullName,
-            email,
-            password,
-            //picturePath,
-            
-        } = req.body;
+export const register = async (req, res) => {
+  try {
+      const { tag, fullName, email, password } = req.body;
+      console.log(req.body);
 
-    const salt = await bcrypt.genSalt();
-    const passwordHash = await bcrypt.hash(password, salt);
+      // Check if an image was uploaded
+      const picturePath = req.file ? req.file.path : null;
+      // Hash the password
+      const salt = await bcrypt.genSalt();
+      const passwordHash = await bcrypt.hash(password, salt);
+      
 
-        const newUser = new User({
-            tag,
-            fullName,
-            email,
-            password: passwordHash,
-            //picturePath,
-            
-        });
-        const savedUser = await newUser.save();
-        res.status(201).json(savedUser);
-    }catch(err){
-        console.log(err);
-        res.status(500).json({error: err.message});
-    }
-}
+      // Create a new user instance
+      const newUser = new User({
+          tag,
+          fullName,
+          email,
+          password: passwordHash,
+          picturePath, // Assign the path of the uploaded image to the user
+      });
+
+      // Save the user to the database
+      const savedUser = await newUser.save();
+
+      res.status(201).json(savedUser);
+  } catch (err) {
+      console.log(err);
+      res.status(500).json({ error: err.message });
+  }
+};
 
 /* LOGIN */
 

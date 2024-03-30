@@ -55,7 +55,7 @@ import User from "../models/user.js";
 //@access          Protected
 const fetchChats = asyncHandler(async (req, res) => {
   try {
-    //console.log(req.user._id);
+    console.log(req.user._id);
     Chat.find({ users: { $elemMatch: { $eq: req.user._id } } })
       .populate("users", "-password")
       .populate("groupAdmin", "-password")
