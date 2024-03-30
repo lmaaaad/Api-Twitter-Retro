@@ -23,7 +23,6 @@ router.get("/:id/followers", verifyToken , getUserFriends);
 router.patch("/:id", verifyToken, updateUser);
 
 //SEARCH USER
-router.get("/", verifyToken,searchUser);    
 
 
 // UPDATE

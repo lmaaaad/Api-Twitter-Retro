@@ -25,7 +25,7 @@ app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 /* CONFIGURATION */
 
 const __filename = fileURLToPath(import.meta.url); //to get the current file name
-const __dirname = path.dirname(__filename); // to get the current directory name
+export const __dirname = path.dirname(__filename); // to get the current directory name
 dotenv.config(); // to loads environment variables from a .env file into process.env , and we can store sensitive data there.
 app.use(express.json()); // to parse incoming data into JSON
 app.use(helmet()); //Sets various HTTP headers to improve security

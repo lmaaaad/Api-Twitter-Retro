@@ -1,48 +1,42 @@
 import bcrypt from "bcrypt";
 import Jwt from "jsonwebtoken";
-import User from "../models/user.js"
+import User from "../models/user.js";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import ResetToken from "../models/resetToken.js";
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+import path from 'path';
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-
-/*
-import tweet from "../models/tweet.js"
-import reply from "../models/reply.js"
-import like from "../models/like.js"
-import notification from "../models/notification.js"
-import followrequest from "../models/followrequest.js" 
-*/
-
-/* REGISTER USER */    
+/* REGISTER USER */
 export const register = async (req, res) => {
   try {
-      const { tag, fullName, email, password } = req.body;
-      console.log(req.body);
+    const { tag, fullName, email, password } = req.body;
+    console.log(req.body);
 
-      // Check if an image was uploaded
-      const picturePath = req.file ? req.file.path : null;
-      // Hash the password
-      const salt = await bcrypt.genSalt();
-      const passwordHash = await bcrypt.hash(password, salt);
-      
+    // Check if an image was uploaded
+    const picturePath = req.file ? req.file.path : null;
+    // Hash the password
+    const salt = await bcrypt.genSalt();
+    const passwordHash = await bcrypt.hash(password, salt);
 
-      // Create a new user instance
-      const newUser = new User({
-          tag,
-          fullName,
-          email,
-          password: passwordHash,
-          picturePath, // Assign the path of the uploaded image to the user
-      });
+    // Create a new user instance
+    const newUser = new User({
+      tag,
+      fullName,
+      email,
+      password: passwordHash,
+      picturePath, // Assign the path of the uploaded image to the user
+    });
 
-      // Save the user to the database
-      const savedUser = await newUser.save();
+    // Save the user to the database
+    const savedUser = await newUser.save();
 
-      res.status(201).json(savedUser);
+    res.status(201).json(savedUser);
   } catch (err) {
-      console.log(err);
-      res.status(500).json({ error: err.message });
+    console.log(err);
+    res.status(500).json({ error: err.message });
   }
 };
 
@@ -66,15 +60,15 @@ export const login = async (req, res) => {
   }
 };
 
-/* Node Mailer */ 
+/* Node Mailer */
 const transporter = nodemailer.createTransport({
-  host: 'smtp.office365.com',
+  host: "smtp.office365.com",
   port: 587,
-  secure: false, 
+  secure: false,
   auth: {
-    user: 'twitter-retro-uvsq@outlook.com',
-    pass: 'iL9594fR5xnErAK@'
-  }
+    user: "twitter-retro-uvsq@outlook.com",
+    pass: "iL9594fR5xnErAK@",
+  },
 });
 
 /* Request Password Reset */
@@ -106,10 +100,11 @@ export const requestPasswordReset = async (req, res) => {
       from: "twitter-retro-uvsq@outlook.com",
       to: email,
       subject: "Password Reset Request",
-      text: `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\n`
-        + `Please click on the following link to reset your password:\n\n`
-        + `http://${req.headers.host}/auth/reset-password?token=${token}\n\n`
-        + `If you did not request this, please ignore this email, and your password will remain unchanged.\n`
+      text:
+        `You are receiving this email because you (or someone else) have requested the reset of the password for your account.\n\n` +
+        `Please click on the following link to reset your password:\n\n` +
+        `http://${req.headers.host}/auth/reset-password?token=${token}\n\n` +
+        `If you did not request this, please ignore this email, and your password will remain unchanged.\n`,
     };
 
     // Send the password reset email
@@ -143,9 +138,9 @@ export const resetPassword = async (req, res) => {
     // Check if the token has expired
     if (resetToken.expires < Date.now()) {
       // If expired, delete the token and return error
-     // await resetToken.remove();
-     await resetToken.deleteOne({ token }); 
-     return res.status(400).json({ msg: "Token has expired" });
+      // await resetToken.remove();
+      await resetToken.deleteOne({ token });
+      return res.status(400).json({ msg: "Token has expired" });
     }
 
     // Find the user associated with the reset token
@@ -161,8 +156,8 @@ export const resetPassword = async (req, res) => {
     user.password = passwordHash;
 
     // Remove the reset token from the database
-   // await resetToken.remove();
-   await resetToken.deleteOne({ token }); 
+    // await resetToken.remove();
+    await resetToken.deleteOne({ token });
 
     // Save the updated user
     await user.save();
@@ -173,3 +168,31 @@ export const resetPassword = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+export const getImage = async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+      const user = await User.findById(userId);
+
+      if (!user) {
+          return res.status(404).json({ message: 'User not found' });
+      }
+
+      // Extract the picturePath from the user object
+      const picturePath = user.picturePath;
+
+      // If picturePath is not available or is empty, return default image or appropriate error response
+      if (!picturePath) {
+          return res.status(404).json({ message: 'User does not have a profile picture' });
+      }
+
+      // Construct absolute path to the image file
+      const absoluteImagePath = path.resolve(__dirname, '..', picturePath);
+
+      // Send the image file back to the client
+      res.sendFile(absoluteImagePath);
+  } catch (error) {
+      console.error(error);
+  }
+}

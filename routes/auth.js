@@ -1,8 +1,10 @@
 import express from "express";
 import multer from "multer";
-import { login } from "../controllers/auth.js";
+import { login,register,getImage } from "../controllers/auth.js";
 import { requestPasswordReset, resetPassword } from "../controllers/auth.js";
-import { register } from "../controllers/auth.js";
+import path from 'path';
+import { fileURLToPath } from 'url'; 
+
 
 const router = express.Router();
 const storage = multer.diskStorage({
@@ -22,5 +24,7 @@ router.post("/forgot-password", requestPasswordReset);
 router.post("/reset-password", resetPassword);
 
 router.post("/login", login);
+
+router.get("/image/:userId",getImage);
 
 export default router;

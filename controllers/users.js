@@ -41,7 +41,7 @@ export const updateUser = async(req, res) => {
 export const getUserFriends= async (req,res)=>{
     
     try {
-        const {id} = req.params;
+    const {id} = req.params;
     const user= await User.findById(id);
     const friends = await Promise.all(
         user.friends.map((id)=>User.findById(id))
