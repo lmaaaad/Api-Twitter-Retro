@@ -1,13 +1,11 @@
-
 import express from "express";
 import Router from "express";
 import {
-    postTweet,
-    getAllTweets,
-    getTweetById,
-    updateTweet,
-    deleteTweet
-    
+  createTweet,
+  getAllTweets,
+  getTweetById,
+  updateTweet,
+  deleteTweet,
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -15,20 +13,14 @@ import { verifyToken } from "../middleware/auth.js";
 const router = express.Router();
 
 // CREATE TWEET
-router.post("/", verifyToken, postTweet); 
+router.post("/", verifyToken, createTweet);
+router.delete("/:id", verifyToken, deleteTweet);
 
-/*  READ */
-
+// GET Tweet
 router.get("/", verifyToken, getAllTweets);
-router.get("/:tweetId", verifyToken, getTweetById);
+router.get("/:id", verifyToken, getTweetById);
 
-
-// UPDATE 
-
+// UPDATE
 router.patch("/:tweetId", verifyToken, updateTweet);
-
-/* DELETE */ 
-
-router.delete("/:tweetId", verifyToken, deleteTweet);
 
 export default router;

@@ -43,6 +43,8 @@ paths:
       responses:
         "201":
           description: Utilisateur crée avec succès
+        "400":
+          description: Adresse mail déjà utilisé
         "500":
           description: Erreur Interne
   /auth/login:
@@ -137,14 +139,60 @@ paths:
           description: Déconnexion réussie
         "500":
           description: Erreur Interne
-  /users/follow/{userId}:
+  /users/{id}:
+    post:
+      summary: Get a user by ID
+      description: Retrieves user information based on their ID
+      tags:
+        - User
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the user to retrieve
+          schema:
+            type: string
+      responses:
+        "200":
+          description: User retrieved successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+  /users/{id}:
+    patch:
+      summary: Update a user
+      description: Updates user information based on their ID
+      tags:
+        - User
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: ID of the user to update
+          schema:
+            type: string
+        - name: body
+          in: body
+          description: Data to update for the user
+          required: true
+          schema:
+            $ref: '#/components/schemas/User'
+      responses:
+        "200":
+          description: User updated successfully
+        "401":
+          description: Unauthorized
+        "500":
+          description: Internal Server Error
+  /users/follow/{id}:
     post:
       summary: Follow a user
       description: Follow another user on the platform.
       tags:
         - User
       parameters:
-        - name: userId
+        - name: id
           in: path
           required: true
           description: ID of the user to follow.
@@ -158,14 +206,14 @@ paths:
         "500":
           description: Internal Server Error
 
-  /users/unfollow/{userId}:
+  /users/unfollow/{id}:
     post:
       summary: Unfollow a user
       description: Unfollow a user on the platform.
       tags:
         - User
       parameters:
-        - name: userId
+        - name: id
           in: path
           required: true
           description: ID of the user to unfollow.
@@ -321,6 +369,69 @@ paths:
       responses:
         '204':
           description: Tweet deleted successfully
+  images/profile/{tag}:
+    get:
+      tags: 
+        - Images
+      summary: Retrieve user's profile image
+      parameters:
+        - name: tag
+          in: path
+          description: Tag of the user whose profile image you want to retrieve
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Profile image retrieved successfully
+          schema:
+            type: string
+            format: binary
+        '404':
+          description: User not found
+  images/banner/{tag}:
+    get:
+      tags: 
+        - Images
+      summary: Retrieve user's banner image
+      parameters:
+        - name: tag
+          in: path
+          description: Tag of the user whose banner image you want to retrieve
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Banner image retrieved successfully
+          schema:
+            type: string
+            format: binary
+        '404':
+          description: User not found
+  images/post/{id}:
+    get:
+      tags: 
+        - Images
+      summary: Retrieve images associated with a post
+      parameters:
+        - name: id
+          in: path
+          description: ID of the post whose images you want to retrieve
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Post images retrieved successfully
+          schema:
+            type: object
+            properties:
+              files:
+                type: array
+                items:
+                  type: string
+            example:
+              files: ["image1.jpg", "image2.jpg"]
+        '404':
+          description: No images found for this post
 
 components:
   schemas:
@@ -376,7 +487,7 @@ components:
           type: integer
           format: int64
           description: The expiry timestamp of the reset token.
-        userId:
+        id:
           type: string
           description: The ID of the user associated with the reset token.
 

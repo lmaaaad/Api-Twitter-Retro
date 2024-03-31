@@ -1,37 +1,33 @@
-
 import express from "express";
 import Router from "express";
 import {
-    getUser,
-    getUserFriends,
-    updateUser,
-    followUser,
-    unfollowUser,
-    // addRemoveFriend,
-    
+  getUserById,
+  //getUserByUsername,
+  getUserFriends,
+  updateUser,
+  followUser,
+  unfollowUser,
+  getMe,
 } from "../controllers/users.js";
 
 import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-/*  READ */
-
-router.get("/:id", verifyToken , getUser);
-router.get("/:id/followers", verifyToken , getUserFriends);
-
-//UPDATE USER 
+/* USER */
+router.get("/me", verifyToken, getMe);
+router.get("/:id", verifyToken, getUserById);
+//router.get("/by/username/:username", verifyToken, getUserByUsername); // GET User per username
 router.patch("/:id", verifyToken, updateUser);
 
-
-// UPDATE follower
-
-// Follow a user by user ID
-router.post('/follow/:userId', verifyToken, followUser);
-
-// Unfollow a user by user ID
-router.post('/unfollow/:userId', verifyToken, unfollowUser);
-//router.patch("/:id/followerId", verifyToken, addRemoveFriends);
-
+/* FOLLOWERS */
+router.get("/:id/followers", verifyToken, getUserFriends);
+//router.get("/users/:id/followers", verifyToken, xxx); // Users a user ID is following
+router.post("/:id/following", verifyToken, followUser);
+router.delete(
+  "/:source_user_id/following/:target_user_id",
+  verifyToken,
+  unfollowUser
+); // Unfollow routes, {source_user_id} is the authenticating user and {target_user_id} the user to unfollow
 
 export default router;
