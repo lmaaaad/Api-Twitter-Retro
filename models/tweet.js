@@ -18,6 +18,28 @@ const tweetSchema = new Schema(
       ref: "Tweet",
       autopopulate: true,
     },
+    stat: {
+      view: {
+        type: Number,
+        default: 0,
+      },
+      retweet: {
+        type: Number,
+        default: 0,
+      },
+      like: {
+        type: Number,
+        default: 0,
+      },
+      bookmark: {
+        type: Number,
+        default: 0,
+      },
+      comment: {
+        type: Number,
+        default: 0,
+      },
+    },
     retweets: [
       {
         type: mongoose.Schema.Types.ObjectId,
@@ -27,7 +49,7 @@ const tweetSchema = new Schema(
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      autopopulate: { select: "tag fullNam ", maxDepth: 2 },
+      autopopulate: { select: "tag", maxDepth: 1 },
     },
     likes: [
       {
@@ -43,6 +65,9 @@ const tweetSchema = new Schema(
         autopopulate: { maxDepth: 1 },
       },
     ],
+    postImage: {
+      type: String,
+    },
   },
   { timestamps: true },
   { collection: "tweets" }

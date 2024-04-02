@@ -1,13 +1,57 @@
 import Tweet from "../models/tweet.js";
 
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import path from "path";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import fs from "fs";
+
 export const createTweet = async (req, res) => {
   try {
-    const { body, type, originalTweet, author } = req.body;
-    const tweet = new Tweet({ body, type, originalTweet, author });
+    const { body, type, author, tag } = req.body;
+
+    console.log("body: " + body);
+    console.log("type: " + type);
+    console.log("author: " + author);
+
+    const tweet = new Tweet({ body, type, author });
+
     const savedTweet = await tweet.save();
-    res.status(201).json(savedTweet);
+
+    if (!req.file) {
+      return res.status(201).json("Tweet created successfully");
+    }
+
+    const tweetId = savedTweet._id.toString();
+
+    const oldPath = path.join(__dirname, "public", "assets", "post", tag);
+    const newPath = path.join(__dirname, "public", "assets", "post", tweetId);
+
+    fs.rename(oldPath, newPath, (err) => {
+      if (err) {
+        console.error("Error rename image (CreateTweets) : ", err);
+        return res.status(500).json({ message: err.message });
+      }
+
+      const imagePath = "/profile/" + tweetId;
+
+      Tweet.findByIdAndUpdate(
+        tweetId,
+        { postImage: imagePath },
+        { new: true },
+        (updateErr, updatedTweet) => {
+          if (updateErr) {
+            console.error("Error updating tweet: ", updateErr);
+            return res.status(500).json({ message: updateErr.message });
+          }
+
+          return res.status(201).json("Tweet created successfully");
+        }
+      );
+    });
   } catch (err) {
-    res.status(400).json({ message: err.message });
+    console.log(err.message);
+    return res.status(500).json({ message: err.message });
   }
 };
 
@@ -21,7 +65,10 @@ export const getAllTweets = async (req, res) => {
     const skip = (page - 1) * pageSize;
 
     // Query database for tweets with pagination
-    const tweets = await Tweet.find().skip(skip).limit(pageSize);
+    const tweets = await Tweet.find()
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(pageSize);
 
     // Count total number of tweets (for pagination metadata)
     const totalTweets = await Tweet.countDocuments();
@@ -75,7 +122,7 @@ export const updateTweet = async (req, res) => {
 
 export const deleteTweet = async (req, res) => {
   try {
-    const tweetId = req.params.tweetId;
+    const tweetId = req.params.id;
     const deletedTweet = await Tweet.findByIdAndDelete(tweetId);
     if (!deletedTweet) {
       return res.status(404).json({ error: "Tweet not found" });
