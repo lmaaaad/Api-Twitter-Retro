@@ -159,7 +159,6 @@ paths:
           description: Unauthorized
         "500":
           description: Internal Server Error
-  /users/{id}:
     patch:
       summary: Update a user
       description: Updates user information based on their ID
