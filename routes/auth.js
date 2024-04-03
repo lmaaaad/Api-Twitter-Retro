@@ -9,7 +9,7 @@ import { fileURLToPath } from 'url';
 const router = express.Router();
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
-      cb(null, "public/assets");
+      cb(null, "public/assets/profiles");
     },
     filename: function (req, file, cb) {
       const uniqueSuffix = Date.now();
