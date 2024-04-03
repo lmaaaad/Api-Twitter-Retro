@@ -8,6 +8,7 @@ import {
   followUser,
   unfollowUser,
   getMe,
+  getUsersById,
 } from "../controllers/users.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -17,6 +18,7 @@ const router = express.Router();
 /* USER */
 router.get("/me", verifyToken, getMe);
 router.get("/:id", verifyToken, getUserById);
+router.get("/", getUsersById);
 //router.get("/by/username/:username", verifyToken, getUserByUsername); // GET User per username
 router.patch("/:id", verifyToken, updateUser);
 

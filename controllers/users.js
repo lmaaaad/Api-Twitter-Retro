@@ -36,6 +36,22 @@ export const getUserById = async (req, res) => {
   }
 };
 
+export const getUsersById = async (req, res) => {
+  console.log(" ===== USERRRS =====");
+  try {
+    const ids = req.query.ids;
+    const users = await User.find(
+      { _id: { $in: ids } },
+      { notifications: 0, password: 0, token: 0, __v: 0 }
+    );
+    console.log(users);
+
+    res.status(200).json(users);
+  } catch (err) {
+    res.status(404).json({ message: err.message });
+  }
+};
+
 /*
 export const getUserByUsername = async (req, res) => {
   try {
