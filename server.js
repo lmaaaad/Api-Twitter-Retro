@@ -13,9 +13,10 @@ import userRoutes from "./routes/users.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import messageRoutes from "./routes/messageRouter.js";
 import tweetsRoutes from "./routes/tweets.js";
+import imagesRoutes from "./routes/images.js";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
-import { Server } from "socket.io";
+import connectDB from "./config/db.js";
 
 const app = express(); // init express app
 /* SWAGGER CONFIG */
@@ -36,26 +37,17 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors()); // Handles Cross-Origin Resource Sharing (CORS) headers.
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
-/* FILE STORAGE */
 
- //Defines a route for handling user registration.
-//It expects a single file upload with the field name "pictures" and calls the register function.
-/** ROUTES */
 
 app.use("/auth", authRoutes); //Mounts routes defined in authRoutes under the /auth prefix.
 app.use("/users", userRoutes); //Mounts routes defined in userRoutes under the /users prefix.
 app.use("/tweets", tweetsRoutes); //Mounts routes defined in tweetsRoutes under the /tweets prefix.
-app.use("/api/chat", chatRoutes);
-app.use("/api/message", messageRoutes);
+app.use("/images", imagesRoutes);
+ 
 
-/* MONGOOSE SETUP */
+
 const PORT = process.env.PORT || 6001; //6001 is the backup port
-mongoose
-  .connect(process.env.MONGO_URL, {
-    // useNewUrlParser: true,
-    // useUnifiedTopology: true,
-  })
-  .then(() => {
+connectDB().then(() => {
     app.listen(PORT, () => console.log("server port: " + PORT));
   })
   .catch((error) => console.log("${error} did not connect "));

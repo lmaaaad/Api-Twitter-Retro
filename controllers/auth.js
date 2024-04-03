@@ -4,39 +4,41 @@ import User from "../models/user.js";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
 import ResetToken from "../models/resetToken.js";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import path from 'path';
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
+
+
 
 /* REGISTER USER */
 export const register = async (req, res) => {
   try {
     const { tag, fullName, email, password } = req.body;
-    console.log(req.body);
 
-    // Check if an image was uploaded
-    const picturePath = req.file ? req.file.path : null;
-    // Hash the password
+
+    const profileImage =  req.file.path ;
+
+
     const salt = await bcrypt.genSalt();
     const passwordHash = await bcrypt.hash(password, salt);
 
-    // Create a new user instance
     const newUser = new User({
       tag,
       fullName,
       email,
       password: passwordHash,
-      picturePath, // Assign the path of the uploaded image to the user
+      profileImage,
     });
-
-    // Save the user to the database
     const savedUser = await newUser.save();
 
     res.status(201).json(savedUser);
   } catch (err) {
     console.log(err);
-    res.status(500).json({ error: err.message });
+    if (err.code === 11000) {
+      res.status(400).json({
+        message: "Adresse e-mail déjà utilisée. Veuillez en choisir une autre.",
+      });
+    } else {
+      res.status(500).json({ error: err.message });
+    }
   }
 };
 
@@ -53,6 +55,8 @@ export const login = async (req, res) => {
     if (!isMatch) return res.status(401).json({ msg: "invalid creds" });
 
     const token = Jwt.sign({ id: user._id }, process.env.JWT_SECRET);
+    await User.findByIdAndUpdate(user._id, { $set: { token } }); //add token to user.
+
     delete user.password;
     res.status(200).json({ token: token, user: user });
   } catch (err) {
@@ -122,7 +126,26 @@ export const requestPasswordReset = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+/*logout*/
+export const logout = async (req, res) => {
+  try {
+    const token = req.header("Authorization").split(" ")[1];
+    if (!token) {
+      return res.status(403).send("Access Denied");
+    }
 
+    // Find the user by token and update the token field to null
+    const user = await User.findOneAndUpdate({ token }, { token: null });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.status(200).json({ message: "Logout successful" });
+  } catch (err) {
+    console.error("Unexpected logout error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
 /* Reset Password */
 export const resetPassword = async (req, res) => {
   try {
@@ -169,30 +192,36 @@ export const resetPassword = async (req, res) => {
   }
 };
 
-export const getImage = async (req, res) => {
-  const userId = req.params.userId;
+export const checkEmail = async (req, res) => {
+  const { email } = req.body;
 
   try {
-      const user = await User.findById(userId);
+    const existingUser = await User.findOne({ email });
 
-      if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-      }
-
-      // Extract the picturePath from the user object
-      const picturePath = user.picturePath;
-
-      // If picturePath is not available or is empty, return default image or appropriate error response
-      if (!picturePath) {
-          return res.status(404).json({ message: 'User does not have a profile picture' });
-      }
-
-      // Construct absolute path to the image file
-      const absoluteImagePath = path.resolve(__dirname, '..', picturePath);
-
-      // Send the image file back to the client
-      res.sendFile(absoluteImagePath);
+    if (existingUser) {
+      return res.status(400).json({ message: "Email already in use" });
+    } else {
+      return res.status(200).json({ message: "Email available" });
+    }
   } catch (error) {
-      console.error(error);
+    console.error("Error checking email:", error);
+    return res.status(500).json({ message: "Internal server error" });
   }
-}
+};
+
+export const checkTag = async (req, res) => {
+  const { tag } = req.body;
+
+  try {
+    const existingUser = await User.findOne({ tag });
+
+    if (existingUser) {
+      return res.status(400).json({ message: "Tag already in use" });
+    } else {
+      return res.status(200).json({ message: "Tag available" });
+    }
+  } catch (error) {
+    console.error("Error checking tag:", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
