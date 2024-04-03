@@ -131,3 +131,4 @@ dist
 public/assets/*
 !public/assets/default.png
 !public/assets/profiles
+public/assets/profiles/
