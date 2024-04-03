@@ -6,6 +6,12 @@ import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
+
+//router.post("/profile", setProfile);
+//router.post("/banner", setBanner);
+//router.post("/post", setPostImages);
+
+
 router.get("/profile/:id", getProfile);
 router.get("/banner/:id", verifyToken, getBanner);
 router.get("/post/:id", verifyToken, getPostImages);
