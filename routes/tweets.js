@@ -17,14 +17,15 @@ const storage = multer.diskStorage({
     cb(null, "public/assets/post");
   },
   filename: function (req, file, cb) {
-    cb(null, req.body.tag);
+    const uniqueSuffix = Date.now();
+    cb(null, uniqueSuffix + file.originalname);
   },
 });
 
 const postStorage = multer({ storage: storage });
 
 // CREATE TWEET
-router.post("/", postStorage.single("image"), createTweet);
+router.post("/",verifyToken , postStorage.single("image"),createTweet);
 router.delete("/:id", verifyToken, deleteTweet);
 
 // GET Tweet

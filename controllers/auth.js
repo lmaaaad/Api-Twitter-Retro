@@ -13,9 +13,7 @@ export const register = async (req, res) => {
   try {
     const { tag, fullName, email, password } = req.body;
 
-
-    const profileImage =  req.file.path ;
-
+    const profileImage = req.file ? req.file.path : null;
 
     const salt = await bcrypt.genSalt();
     const passwordHash = await bcrypt.hash(password, salt);
@@ -32,15 +30,9 @@ export const register = async (req, res) => {
     res.status(201).json(savedUser);
   } catch (err) {
     console.log(err);
-    if (err.code === 11000) {
-      res.status(400).json({
-        message: "Adresse e-mail déjà utilisée. Veuillez en choisir une autre.",
-      });
-    } else {
-      res.status(500).json({ error: err.message });
-    }
   }
 };
+
 
 /* LOGIN */
 

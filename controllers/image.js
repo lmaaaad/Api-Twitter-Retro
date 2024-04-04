@@ -1,15 +1,73 @@
 import { fileURLToPath } from "url";
 import path from "path";
 import fs from "fs";
+import Tweet from "../models/tweet.js";
 import User from "../models/user.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+
+export const updateProfile = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Remove previous profile image if it exists and it's not the default image
+    if (user.profileImage && !user.profileImage.startsWith('default')) {
+      const previousImagePath = path.join(__dirname, "..", user.profileImage);
+      fs.unlinkSync(previousImagePath);
+    }
+
+    // Update profile image path in the database
+    user.profileImage = req.file.path;
+    await user.save();
+
+    res.status(200).json({ message: "Profile image updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+
+export const updateBanner = async (req, res) => {
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Remove previous banner image if it exists and it's not the default image
+    if (user.bannerImage && !user.bannerImage.startsWith('default')) {
+      const previousImagePath = path.join(__dirname, "..", user.bannerImage);
+      fs.unlinkSync(previousImagePath);
+    }
+
+    // Update banner image path in the database
+    user.bannerImage = req.file.path;
+    await user.save();
+
+    res.status(200).json({ message: "Banner image updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
 
 export const getBanner = async (req, res) => {
   const id = req.params.id;
 
   try {
-    const user = await User.findOne({ id: id });
+    const user = await User.findById(id);
 
     if (!user) {
       return res.status(404).json({ message: "User not found" });
@@ -18,7 +76,7 @@ export const getBanner = async (req, res) => {
     const picturePath = user.bannerImage;
 
     if (!picturePath) {
-      res.status(400).json({ message: "No banner" });
+      return res.status(400).json({ message: "No banner" });
     }
 
     const absoluteImagePath = path.join(__dirname, "..", picturePath);
@@ -26,58 +84,56 @@ export const getBanner = async (req, res) => {
     res.sendFile(absoluteImagePath);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 export const getPostImages = async (req, res) => {
-  const id = req.params.id;
-
-  const imageFolder = path.join(__dirname, "public", "assets", "post", id);
+  const tweetId = req.params.id;
 
   try {
-    if (!fs.existsSync(imageFolder)) {
-      return res.status(404).json({ error: "No images found" });
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
     }
 
-    fs.readdir(imageFolder, (err, files) => {
-      if (err) {
-        return res
-          .status(404)
-          .json({ message: "Images folder does not exist for this post" });
-      }
+    const picturePath = tweet.postImage;
 
-      res.json({ files });
-    });
+    if (!picturePath) {
+      return res.status(404).json({ message: 'Tweet does not have an image' });
+    }
+
+    const absoluteImagePath = path.resolve(__dirname, '..', picturePath);
+
+    res.sendFile(absoluteImagePath);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
 
 export const getProfile = async (req, res) => {
   const userId = req.params.id;
-  console.log(userId);
+
   try {
-      const user = await User.findById(userId);
+    const user = await User.findById(userId);
 
-      if (!user) {
-          return res.status(404).json({ message: 'User not found' });
-      }
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
 
-      // Extract the picturePath from the user object
-      const picturePath = user.profileImage;
+    const picturePath = user.profileImage;
 
-      // If picturePath is not available or is empty, return default image or appropriate error response
-      if (!picturePath) {
-          return res.status(404).json({ message: 'User does not have a profile picture' });
-      }
+    if (!picturePath) {
+      return res.status(404).json({ message: 'User does not have a profile picture' });
+    }
 
-      // Construct absolute path to the image file
-      const absoluteImagePath = path.resolve(__dirname, '..', picturePath);
-      console.log(absoluteImagePath);
+    const absoluteImagePath = path.resolve(__dirname, '..', picturePath);
 
-      // Send the image file back to the client
-      res.sendFile(absoluteImagePath);
+    res.sendFile(absoluteImagePath);
   } catch (error) {
-      console.error(error);
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
-}
+};

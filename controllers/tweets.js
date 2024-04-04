@@ -6,51 +6,23 @@ import path from "path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import fs from "fs";
 
+
 export const createTweet = async (req, res) => {
+  const author = req.user.id;
+  const { body, type } = req.body;
+  let postImage = null;
+
+  if (req.file) {
+      postImage = req.file.path;
+  }
+
+  const tweet = new Tweet({ body, type, author, postImage });
+
   try {
-    const author = req.user.id;
-    const  tag  = req.body.tag;
-    const { body, type} = req.body;
-
-
-    const tweet = new Tweet({ body, type, author });
-
-    const savedTweet = await tweet.save();
-
-    if (!req.file) {
-      return res.status(201).json("Tweet created successfully");
-    }
-
-    const tweetId = savedTweet._id.toString();
-
-    const oldPath = path.join(__dirname, "public", "assets", "post", tag);
-    const newPath = path.join(__dirname, "public", "assets", "post", tweetId);
-
-    fs.rename(oldPath, newPath, (err) => {
-      if (err) {
-        console.error("Error rename image (CreateTweets) : ", err);
-        return res.status(500).json({ message: err.message });
-      }
-
-      const imagePath = "/profile/" + tweetId;
-
-      Tweet.findByIdAndUpdate(
-        tweetId,
-        { postImage: imagePath },
-        { new: true },
-        (updateErr, updatedTweet) => {
-          if (updateErr) {
-            console.error("Error updating tweet: ", updateErr);
-            return res.status(500).json({ message: updateErr.message });
-          }
-
-          return res.status(201).json("Tweet created successfully");
-        }
-      );
-    });
-  } catch (err) {
-    console.log(err.message);
-    return res.status(500).json({ message: err.message });
+      const savedTweet = await tweet.save();
+      res.status(201).json(savedTweet);
+  } catch (error) {
+      res.status(500).json({ error: "An error occurred while creating the tweet." });
   }
 };
 
