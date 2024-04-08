@@ -6,6 +6,8 @@ import {
   getTweetById,
   updateTweet,
   deleteTweet,
+  likeTweet,
+  unlikeTweet
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -34,5 +36,8 @@ router.get("/:id", verifyToken, getTweetById);
 
 // UPDATE
 router.patch("/:tweetId", verifyToken, updateTweet);
-
+// Like Tweet 
+router.post('/:tweetId/like', verifyToken, likeTweet);
+// Unlike tweet 
+router.post('/:tweetId/unlike', verifyToken, unlikeTweet);
 export default router;

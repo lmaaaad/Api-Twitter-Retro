@@ -2,7 +2,7 @@ openapi: 3.0.0
 info:
   title: Twitter-Retro API
   version: 1.0.0
-  description: API de Twitter Retro en devéloppement...
+  description: API de Twitter Retro en développement...
 
 paths:
   /auth/register:
@@ -42,9 +42,9 @@ paths:
                   description: Liste d'amis de l'utilisateur.
       responses:
         "201":
-          description: Utilisateur crée avec succès
+          description: Utilisateur créé avec succès
         "400":
-          description: Adresse mail déjà utilisé
+          description: Adresse e-mail déjà utilisée
         "500":
           description: Erreur Interne
   /auth/login:
@@ -70,9 +70,9 @@ paths:
                   description: Le mot de passe de l'utilisateur.
       responses:
         "200":
-          description: Connexion réussi
+          description: Connexion réussie
         "401":
-          description: Mot de passe ou email incorrect
+          description: Mot de passe ou e-mail incorrect
         "500":
           description: Erreur Interne
   /auth/forgot-password:
@@ -281,7 +281,6 @@ paths:
           required: true 
       tags: 
         - Tweets
-
       requestBody:
         required: true
         content:
@@ -369,7 +368,61 @@ paths:
       responses:
         '204':
           description: Tweet deleted successfully
-  images/profile/{tag}:
+  /tweets/{tweetId}/like:
+    post:
+      summary: Like a tweet
+      description: Like a tweet by its ID
+      tags:
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          description: The ID of the tweet to like
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tweet liked successfully
+        '401':
+          description: Unauthorized - User not authenticated
+        '404':
+          description: Tweet not found
+        '500':
+          description: Internal Server Error
+
+  /tweets/{tweetId}/unlike:
+    post:
+      summary: Unlike a tweet
+      description: Unlike a tweet by its ID
+      tags:
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          description: The ID of the tweet to unlike
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tweet unliked successfully
+        '401':
+          description: Unauthorized - User not authenticated
+        '404':
+          description: Tweet not found
+        '500':
+          description: Internal Server Error
+
+  /images/profile/{tag}:
     get:
       tags: 
         - Images
@@ -388,7 +441,7 @@ paths:
             format: binary
         '404':
           description: User not found
-  images/banner/{tag}:
+  /images/banner/{tag}:
     get:
       tags: 
         - Images
@@ -407,7 +460,7 @@ paths:
             format: binary
         '404':
           description: User not found
-  images/post/{id}:
+  /images/post/{id}:
     get:
       tags: 
         - Images
@@ -430,8 +483,6 @@ paths:
                   type: string
             example:
               files: ["image1.jpg", "image2.jpg"]
-        '404':
-          description: No images found for this post
 
 components:
   schemas:

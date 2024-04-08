@@ -132,3 +132,95 @@ export const deleteTweet = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+
+
+export const likeTweet = async (req, res) => {
+  const { tweetId } = req.params;
+  const userId = req.user._id; // Assuming user ID is available in the request
+
+  try {
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    // Check if the user has already liked the tweet
+    if (tweet.likes.some(like => like.equals(userId))) {
+      return res.status(400).json({ message: 'Tweet already liked by the user' });
+    }
+
+    // Add user ID to the list of likes
+    tweet.likes.push(userId);
+    await tweet.save();
+
+    res.status(200).json({ message: 'Tweet liked successfully' });
+  } catch (error) {
+    console.error('Error liking tweet:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const unlikeTweet = async (req, res) => {
+  const { tweetId } = req.params;
+  const userId = req.user._id; // Assuming user ID is available in the request
+
+  try {
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    // Check if the user has liked the tweet
+    const userLikeIndex = tweet.likes.findIndex(like => like.equals(userId));
+    if (userLikeIndex === -1) {
+      return res.status(400).json({ message: 'Tweet not liked by the user' });
+    }
+
+    // Remove the like from the likes array
+    tweet.likes.splice(userLikeIndex, 1);
+    await tweet.save();
+
+    // Return the updated tweet object in the response
+    return res.status(200).json({ message: 'Tweet unliked successfully' });
+  } catch (error) {
+    console.error('Error unliking tweet:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/*        IF THE USER ALREADY LIKED THE TWEET => UNLIKE THE TWEET , et vice versa 
+
+export const likeTweet = async (req, res) => {
+  const { tweetId } = req.params;
+  const userId = req.user._id; // Assuming user ID is available in the request
+
+  try {
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    // Check if the user has already liked the tweet
+    const alreadyLikedIndex = tweet.likes.findIndex(like => like.equals(userId));
+
+    if (alreadyLikedIndex !== -1) {
+      // If the user has already liked the tweet, remove the like
+      tweet.likes.splice(alreadyLikedIndex, 1);
+      await tweet.save();
+      return res.status(200).json({ message: 'Tweet unliked successfully' });
+    } else {
+      // If the user has not liked the tweet, add the like
+      tweet.likes.push(userId);
+      await tweet.save();
+      return res.status(200).json({ message: 'Tweet liked successfully' });
+    }
+  } catch (error) {
+    console.error('Error liking/unliking tweet:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+*/
