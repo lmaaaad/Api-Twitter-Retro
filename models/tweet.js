@@ -65,6 +65,13 @@ const tweetSchema = new Schema(
         autopopulate: { maxDepth: 1 },
       },
     ],
+    bookmarks: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        autopopulate: { select: "tag", maxDepth: 1 },
+      },
+    ],
     postImage: {
       type: String,
     },

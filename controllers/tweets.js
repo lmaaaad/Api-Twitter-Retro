@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+
 import Tweet from "../models/tweet.js";
 
 import { fileURLToPath } from "url";
@@ -284,3 +286,107 @@ export const unretweetTweet = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
+// bookmark a tweet 
+export const bookmarkTweet = async (req, res) => {
+  const { tweetId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    // Check if the tweet is already bookmarked by the user
+    const alreadyBookmarked = tweet.bookmarks.some(bookmark => bookmark.equals(userId));
+
+    if (alreadyBookmarked) {
+      return res.status(400).json({ message: 'Tweet already bookmarked by the user' });
+    }
+
+    // Update the bookmark count in the stat field
+    tweet.stat.bookmark += 1;
+
+    // Add the user ID to the bookmarks array
+    tweet.bookmarks.push(userId);
+
+    // Save the updated tweet
+    await tweet.save();
+
+    return res.status(200).json({ message: 'Tweet bookmarked successfully' });
+  } catch (error) {
+    console.error('Error bookmarking tweet:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+export const unbookmarkTweet = async (req, res) => {
+  const { tweetId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    // Check if the tweet is bookmarked by the user
+    const bookmarkIndex = tweet.bookmarks.findIndex(bookmark => bookmark.equals(userId));
+
+    if (bookmarkIndex === -1) {
+      return res.status(400).json({ message: 'Tweet not bookmarked by the user' });
+    }
+
+    // Update the bookmark count in the stat field
+    tweet.stat.bookmark -= 1;
+
+    // Remove the user ID from the bookmarks array
+    tweet.bookmarks.splice(bookmarkIndex, 1);
+
+    // Save the updated tweet
+    await tweet.save();
+
+    return res.status(200).json({ message: 'Tweet unbookmarked successfully' });
+  } catch (error) {
+    console.error('Error unbookmarking tweet:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+/*        IF THE USER ALREADY bookmarked THE TWEET => unbookmard THE TWEET , et vice versa 
+export const toggleBookmark = async (req, res) => {
+  const { tweetId } = req.params;
+  const userId = req.user._id;
+
+  try {
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    // Check if the tweet is already bookmarked by the user
+    const bookmarkIndex = tweet.bookmarks.findIndex(bookmark => bookmark.equals(userId));
+
+    if (bookmarkIndex !== -1) {
+      // If the tweet is already bookmarked, unbookmark it
+      tweet.stat.bookmark -= 1;
+      tweet.bookmarks.splice(bookmarkIndex, 1);
+      await tweet.save();
+      return res.status(200).json({ message: 'Tweet unbookmarked successfully' });
+    } else {
+      // If the tweet is not bookmarked, bookmark it
+      tweet.stat.bookmark += 1;
+      tweet.bookmarks.push(userId);
+      await tweet.save();
+      return res.status(200).json({ message: 'Tweet bookmarked successfully' });
+    }
+  } catch (error) {
+    console.error('Error toggling bookmark:', error);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+*/

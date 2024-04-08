@@ -9,7 +9,9 @@ import {
   likeTweet,
   unlikeTweet,
   retweetTweet,
-  unretweetTweet
+  unretweetTweet,
+  bookmarkTweet,
+  unbookmarkTweet
 
 } from "../controllers/tweets.js";
 
@@ -51,4 +53,9 @@ router.post('/:tweetId/retweet',verifyToken, retweetTweet);
 // Route to unretweet a tweet
 router.post('/:tweetId/unretweet',verifyToken, unretweetTweet);
 
+// Route to bookmark a tweet
+router.post('/:tweetId/bookmark',verifyToken, bookmarkTweet);
+
+// Route to unbookmark a tweet
+router.post('/:tweetId/unbookmark',verifyToken, unbookmarkTweet);
 export default router;

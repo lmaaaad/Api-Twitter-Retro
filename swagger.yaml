@@ -475,6 +475,60 @@ paths:
           description: Tweet not found
         '500':
           description: Internal Server Error
+
+  /tweets/{tweetId}/bookmark:
+    post:
+      summary: Bookmark a tweet
+      description: Bookmark a tweet by its ID
+      tags:
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          description: The ID of the tweet to bookmark
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tweet bookmarked successfully
+        '401':
+          description: Unauthorized - User not authenticated
+        '404':
+          description: Tweet not found
+        '500':
+          description: Internal Server Error
+
+  /tweets/{tweetId}/unbookmark:
+    post:
+      summary: Unbookmark a tweet
+      description: Unbookmark a tweet by its ID
+      tags:
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          description: The ID of the tweet to unbookmark
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tweet unbookmarked successfully
+        '401':
+          description: Unauthorized - User not authenticated
+        '404':
+          description: Tweet not found
+        '500':
+          description: Internal Server Error         
           
   /images/profile/{tag}:
     get:
