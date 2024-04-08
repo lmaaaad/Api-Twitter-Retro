@@ -1,5 +1,5 @@
 import express from "express";
-import Router from "express";
+import multer from "multer";
 import {
   createTweet,
   getAllTweets,
@@ -12,8 +12,20 @@ import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "public/assets/post");
+  },
+  filename: function (req, file, cb) {
+    console.log("ITSWORK");
+    cb(null, req.body.tag);
+  },
+});
+
+const postStorage = multer({ storage: storage });
+
 // CREATE TWEET
-router.post("/", verifyToken, createTweet);
+router.post("/", postStorage.single("image"), createTweet);
 router.delete("/:id", verifyToken, deleteTweet);
 
 // GET Tweet
