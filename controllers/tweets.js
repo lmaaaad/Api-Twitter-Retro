@@ -224,3 +224,63 @@ export const likeTweet = async (req, res) => {
 };
 
 */
+
+// Retweet a tweet
+export const retweetTweet = async (req, res) => {
+  const { tweetId } = req.params;
+  const userId = req.user._id; // Assuming user ID is available in the request
+
+  try {
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    // Check if the user has already retweeted the tweet
+    const alreadyRetweetedIndex = tweet.retweets.findIndex(retweet => retweet.equals(userId));
+
+    if (alreadyRetweetedIndex === -1) {
+      // If the user has not retweeted the tweet, add their ID to the retweets array
+      tweet.retweets.push(userId);
+      await tweet.save();
+      return res.status(200).json({ message: 'Tweet retweeted successfully' });
+    } else {
+      // If the user has already retweeted the tweet, return an error
+      return res.status(400).json({ message: 'Tweet already retweeted by the user' });
+    }
+  } catch (error) {
+    console.error('Error retweeting tweet:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Unretweet a tweet
+export const unretweetTweet = async (req, res) => {
+  const { tweetId } = req.params;
+  const userId = req.user._id; // Assuming user ID is available in the request
+
+  try {
+    const tweet = await Tweet.findById(tweetId);
+
+    if (!tweet) {
+      return res.status(404).json({ message: 'Tweet not found' });
+    }
+
+    // Check if the user has retweeted the tweet
+    const alreadyRetweetedIndex = tweet.retweets.findIndex(retweet => retweet.equals(userId));
+
+    if (alreadyRetweetedIndex !== -1) {
+      // If the user has retweeted the tweet, remove their ID from the retweets array
+      tweet.retweets.splice(alreadyRetweetedIndex, 1);
+      await tweet.save();
+      return res.status(200).json({ message: 'Tweet unretweeted successfully' });
+    } else {
+      // If the user has not retweeted the tweet, return an error
+      return res.status(400).json({ message: 'Tweet not retweeted by the user' });
+    }
+  } catch (error) {
+    console.error('Error unretweeting tweet:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};

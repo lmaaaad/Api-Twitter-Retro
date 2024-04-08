@@ -422,6 +422,60 @@ paths:
         '500':
           description: Internal Server Error
 
+  /tweets/{tweetId}/retweet:
+    post:
+      summary: Retweet a tweet
+      description: Retweet a tweet by its ID
+      tags:
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          description: The ID of the tweet to retweet
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tweet retweeted successfully
+        '401':
+          description: Unauthorized - User not authenticated
+        '404':
+          description: Tweet not found
+        '500':
+          description: Internal Server Error
+
+  /tweets/{tweetId}/unretweet:
+    post:
+      summary: Unretweet a tweet
+      description: Unretweet a tweet by its ID
+      tags:
+        - Tweets
+      parameters:
+        - name: Auth
+          in: header
+          description: Bearer token
+          required: true
+        - name: tweetId
+          in: path
+          description: The ID of the tweet to unretweet
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Tweet unretweeted successfully
+        '401':
+          description: Unauthorized - User not authenticated
+        '404':
+          description: Tweet not found
+        '500':
+          description: Internal Server Error
+          
   /images/profile/{tag}:
     get:
       tags: 
