@@ -194,7 +194,7 @@ export const unlikeTweet = async (req, res) => {
 
 /*        IF THE USER ALREADY LIKED THE TWEET => UNLIKE THE TWEET , et vice versa 
 
-export const likeTweet = async (req, res) => {
+export const likeTweetButton = async (req, res) => {
   const { tweetId } = req.params;
   const userId = req.user._id; // Assuming user ID is available in the request
 

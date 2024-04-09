@@ -182,7 +182,9 @@ paths:
         "200":
           description: User updated successfully
         "401":
-          description: Unauthorized
+          description: Unauthorized - User not authenticated
+        "404":
+          description: User not found  
         "500":
           description: Internal Server Error
   /users/follow/{id}:
