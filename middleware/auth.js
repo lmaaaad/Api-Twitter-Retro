@@ -23,7 +23,8 @@ export const verifyToken = async (req, res, next) => {
     const user = await User.findById(decoded.id); // Assuming your user ID is stored in the token
 
     if (!user) {
-      throw new Error("User not found");
+      res.status(401).json({ error: "User not found" });
+      return;
     }
 
     req.user = user; // Attach the user object to the request

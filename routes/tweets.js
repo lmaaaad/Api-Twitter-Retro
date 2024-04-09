@@ -6,6 +6,13 @@ import {
   getTweetById,
   updateTweet,
   deleteTweet,
+  likeTweet,
+  unlikeTweet,
+  retweetTweet,
+  unretweetTweet,
+  bookmarkTweet,
+  unbookmarkTweet
+
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -35,4 +42,20 @@ router.get("/:id", verifyToken, getTweetById);
 // UPDATE
 router.patch("/:tweetId", verifyToken, updateTweet);
 
+// Like Tweet 
+router.post('/:tweetId/like', verifyToken, likeTweet);
+// Unlike tweet 
+router.post('/:tweetId/unlike', verifyToken, unlikeTweet);
+
+// Route to retweet a tweet
+router.post('/:tweetId/retweet',verifyToken, retweetTweet);
+
+// Route to unretweet a tweet
+router.post('/:tweetId/unretweet',verifyToken, unretweetTweet);
+
+// Route to bookmark a tweet
+router.post('/:tweetId/bookmark',verifyToken, bookmarkTweet);
+
+// Route to unbookmark a tweet
+router.post('/:tweetId/unbookmark',verifyToken, unbookmarkTweet);
 export default router;
