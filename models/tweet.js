@@ -40,24 +40,11 @@ const tweetSchema = new Schema(
         default: 0,
       },
     },
-    retweets: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Tweet",
-      },
-    ],
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       autopopulate: { select: "tag", maxDepth: 1 },
     },
-    likes: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        autopopulate: { select: "tag", maxDepth: 1 },
-      },
-    ],
     replies: [
       {
         type: mongoose.Schema.Types.ObjectId,

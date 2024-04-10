@@ -18,7 +18,7 @@ export const register = async (req, res) => {
   try {
     const { tag, fullName, email, password } = req.body;
 
-    const picturePath = req.file ? req.file.path : null;
+    const profileImage = req.file ? req.file.path : null;
 
     const salt = await bcrypt.genSalt();
     const passwordHash = await bcrypt.hash(password, salt);
@@ -28,7 +28,7 @@ export const register = async (req, res) => {
       fullName,
       email,
       password: passwordHash,
-      picturePath,
+      profileImage,
     });
 
     const savedUser = await newUser.save();

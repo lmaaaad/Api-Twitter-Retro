@@ -3,7 +3,6 @@ import bodyParser from "body-parser";
 import mongoose from "mongoose";
 import cors from "cors";
 import dotenv from "dotenv";
-import multer from "multer";
 import helmet from "helmet";
 import morgan from "morgan";
 import path from "path";
@@ -13,7 +12,6 @@ import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
 import tweetsRoutes from "./routes/tweets.js";
 import imagesRoutes from "./routes/images.js";
-import { register } from "./controllers/auth.js";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 
@@ -37,23 +35,6 @@ app.use(bodyParser.urlencoded({ extended: true, limit: "10mb" }));
 app.use(cors()); // Handles Cross-Origin Resource Sharing (CORS) headers.
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
-/* FILE STORAGE */
-
-const storage = multer.diskStorage(
-  // Configures disk storage engine for multer
-  {
-    destination: function (req, file, cb) {
-      cb(null, "public/assets"); //Defines the directory where uploaded files will be stored.
-    },
-    filename: function (req, file, cb) {
-      cb(null, file.originalname); //Defines the function to determine the filename of the uploaded file
-    }, // in this case is the original name
-  }
-);
-const upload = multer(storage);
-/* ROUTES WITH FILES */
-app.post("/auth/register", upload.single("pictures"), register); //Defines a route for handling user registration.
-//It expects a single file upload with the field name "pictures" and calls the register function.
 /** ROUTES */
 
 app.use("/auth", authRoutes); //Mounts routes defined in authRoutes under the /auth prefix.
