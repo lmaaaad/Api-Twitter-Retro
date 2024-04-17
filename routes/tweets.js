@@ -5,7 +5,6 @@ import {
   getAllTweets,
   getTweetById,
   getTweetsPerIds,
-  updateTweet,
   deleteTweet,
   likeTweet,
   unlikeTweet,
@@ -31,11 +30,9 @@ const storage = multer.diskStorage({
 
 const postUpload = multer({ storage: storage });
 
-// CREATE TWEET
 router.post("/", verifyToken, postUpload.single("image"), createTweet);
 router.delete("/:id", verifyToken, deleteTweet);
 
-// GET Tweet
 router.get("/", verifyToken, getTweetsPerIds);
 router.get("/feed", verifyToken, getAllTweets);
 router.get("/:id", verifyToken, getTweetById);
