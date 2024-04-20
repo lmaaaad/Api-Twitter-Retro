@@ -39,11 +39,13 @@ app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
 
 
+app.use("/api/chat", chatRoutes); //Mounts routes defined in chatRoutes under the /chat prefix.
+app.use("/api/message",messageRoutes);
 app.use("/auth", authRoutes); //Mounts routes defined in authRoutes under the /auth prefix.
-app.use("/users", userRoutes); //Mounts routes defined in userRoutes under the /users prefix.
+app.use("/users", userRoutes); //Mounts routes defined in userRoutes under the /users prefix. //Mounts routes defined in messageRoutes under the /message prefix.
 app.use("/tweets", tweetsRoutes); //Mounts routes defined in tweetsRoutes under the /tweets prefix.
 app.use("/images", imagesRoutes);
- 
+
 
 
 const PORT = process.env.PORT || 6001; //6001 is the backup port
