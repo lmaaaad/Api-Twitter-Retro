@@ -17,6 +17,7 @@ import imagesRoutes from "./routes/images.js";
 import swaggerUi from "swagger-ui-express";
 import YAML from "yamljs";
 import connectDB from "./config/db.js";
+import { Server } from "socket.io";
 
 const app = express(); // init express app
 /* SWAGGER CONFIG */
@@ -37,20 +38,53 @@ app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
 app.use(cors()); // Handles Cross-Origin Resource Sharing (CORS) headers.
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
-
-
 app.use("/api/chat", chatRoutes); //Mounts routes defined in chatRoutes under the /chat prefix.
-app.use("/api/message",messageRoutes);
+app.use("/api/message", messageRoutes);
 app.use("/auth", authRoutes); //Mounts routes defined in authRoutes under the /auth prefix.
 app.use("/users", userRoutes); //Mounts routes defined in userRoutes under the /users prefix. //Mounts routes defined in messageRoutes under the /message prefix.
 app.use("/tweets", tweetsRoutes); //Mounts routes defined in tweetsRoutes under the /tweets prefix.
 app.use("/images", imagesRoutes);
 
+const PORT = process.env.PORT;
 
+const server = app.listen(PORT, () => console.log("server port: " + PORT));
+const io = new Server(server, {
+  cors: {
+    origin: "http://localhost:5000",
+  },
+  pingTimeout: 60000,
+});
 
-const PORT = process.env.PORT || 6001; //6001 is the backup port
-connectDB().then(() => {
-    app.listen(PORT, () => console.log("server port: " + PORT));
-  })
-  .catch((error) => console.log("${error} did not connect "));
+io.on("connection", (socket) => {
+  socket.on("setup", (userData) => {
+    socket.join(userData._id);
+    socket.emit("connected");
+  });
 
+  socket.on("join chat", (room) => {
+    socket.join(room);
+    console.log("User Joined Room: " + room);
+  });
+  socket.on("typing", (room) => socket.in(room).emit("typing",room));
+  socket.on("stop typing", (room) => socket.in(room).emit("stop typing",room));
+
+  socket.on("new message", (newMessageRecieved) => {
+    var chat = newMessageRecieved.chat;
+
+    if (!chat.users) return console.log("chat.users not defined");
+
+    chat.users.forEach((user) => {
+      if (user._id == newMessageRecieved.sender._id) return;
+      console.log("EMITTING TO: " + user._id + " " + newMessageRecieved.content);
+      socket.in(user._id).emit("message recieved", newMessageRecieved)
+    });
+  });
+  socket.off("setup", () => {
+    console.log("USER DISCONNECTED");
+    socket.leave(userData._id);
+  });
+});
+
+connectDB().catch((error) => {
+  console.error("Failed to connect to the database:", error);
+});
