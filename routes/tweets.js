@@ -12,6 +12,7 @@ import {
   unretweetTweet,
   bookmarkTweet,
   unbookmarkTweet,
+  searchLatest,
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -43,5 +44,7 @@ router.post("/:tweetId/retweet", verifyToken, retweetTweet);
 router.post("/:tweetId/unretweet", verifyToken, unretweetTweet);
 router.post("/:tweetId/bookmark", verifyToken, bookmarkTweet);
 router.post("/:tweetId/unbookmark", verifyToken, unbookmarkTweet);
+
+router.get("/latest/:search", verifyToken, searchLatest);
 
 export default router;

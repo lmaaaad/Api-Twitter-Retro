@@ -46,11 +46,9 @@ export const getAllTweets = async (req, res) => {
 export const getTweetsPerIds = async (req, res) => {
   try {
     const ids = req.query.ids;
-    console.log(ids);
     var tweets = await Tweet.find({ _id: { $in: ids } }).sort({
       createdAt: -1,
     });
-    console.log(tweets);
     res.status(200).json(tweets);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -157,7 +155,7 @@ export const createTweet = async (req, res) => {
       });
     });
   } catch (err) {
-    console.log(err.message);
+    console.error(err.message);
     return res.status(500).json({ message: err.message });
   }
 };
@@ -389,6 +387,29 @@ export const unbookmarkTweet = async (req, res) => {
       tweetStat: tweet.stat,
       userStat: user.stat,
     });
+  } catch (error) {
+    console.error("Error unbookmarking tweet:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const searchLatest = async (req, res) => {
+  const { search } = req.params;
+
+  try {
+    const regex = new RegExp(`\\b${search}\\b`, "i");
+
+    const tweets = await Tweet.find({
+      body: regex,
+    })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    if (!tweets) {
+      return res.status(404).json({ message: "Tweet not found" });
+    }
+
+    return res.status(200).json(tweets);
   } catch (error) {
     console.error("Error unbookmarking tweet:", error);
     return res.status(500).json({ error: "Internal server error" });

@@ -3,13 +3,17 @@ import multer from "multer";
 import {
   getUserById,
   getUserByTag,
-  getUserFriends,
   updateUser,
   followUser,
   unfollowUser,
   getMe,
   getUsersByIds,
-  addFieldUser,
+  getSearchUsers,
+  getFollowers,
+  getFollowing,
+  getUserPosts,
+  getUserLikes,
+  getUserRetweets,
 } from "../controllers/users.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -28,16 +32,23 @@ const profileStorage = multer.diskStorage({
 const profileUpload = multer({ storage: profileStorage });
 
 /* FOLLOWERS */
-router.get("/:id/followers", verifyToken, getUserFriends);
+router.get("/:tag/followers", verifyToken, getFollowers);
+router.get("/:tag/following", verifyToken, getFollowing);
 router.post("/:id/following", verifyToken, followUser);
 router.delete("/:id/following", verifyToken, unfollowUser);
 
+router.get("/:tag/posts", verifyToken, getUserPosts);
+router.get("/:tag/likes", verifyToken, getUserLikes);
+router.get("/:tag/retweets", verifyToken, getUserRetweets);
+
 /* USER */
-router.put("/", verifyToken, addFieldUser);
 router.get("/me", verifyToken, getMe);
 router.get("/:id", verifyToken, getUserById);
 router.get("/", getUsersByIds);
 router.get("/by/tag/:tag", verifyToken, getUserByTag);
+router.get("/search/:search", getSearchUsers);
 router.patch("/", verifyToken, profileUpload.single("profile"), updateUser);
+
+getFollowers;
 
 export default router;
