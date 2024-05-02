@@ -49,6 +49,4 @@ router.get("/by/tag/:tag", verifyToken, getUserByTag);
 router.get("/search/:search", getSearchUsers);
 router.patch("/", verifyToken, profileUpload.single("profile"), updateUser);
 
-getFollowers;
-
 export default router;

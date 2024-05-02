@@ -5,14 +5,6 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import ResetToken from "../models/resetToken.js";
 
-/*
-import tweet from "../models/tweet.js"
-import reply from "../models/reply.js"
-import like from "../models/like.js"
-import notification from "../models/notification.js"
-import followrequest from "../models/followrequest.js" 
-*/
-
 /* REGISTER USER */
 export const register = async (req, res) => {
   try {
@@ -30,7 +22,6 @@ export const register = async (req, res) => {
       password: passwordHash,
       profileImage,
     });
-
     const savedUser = await newUser.save();
 
     res.status(201).json(savedUser);
