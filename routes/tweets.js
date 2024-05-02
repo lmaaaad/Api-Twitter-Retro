@@ -1,34 +1,38 @@
-
 import express from "express";
-import Router from "express";
+import multer from "multer";
 import {
-    postTweet,
-    getAllTweets,
-    getTweetById,
-    updateTweet,
-    deleteTweet
-    
+  createTweet,
+  getAllTweets,
+  getTweetById,
+  updateTweet,
+  deleteTweet,
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "public/assets/post");
+  },
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now();
+    cb(null, uniqueSuffix + file.originalname);
+  },
+});
+
+const postStorage = multer({ storage: storage });
+
 // CREATE TWEET
-router.post("/", verifyToken, postTweet); 
+router.post("/",verifyToken , postStorage.single("image"),createTweet);
+router.delete("/:id", verifyToken, deleteTweet);
 
-/*  READ */
-
+// GET Tweet
 router.get("/", verifyToken, getAllTweets);
-router.get("/:tweetId", verifyToken, getTweetById);
+router.get("/:id", verifyToken, getTweetById);
 
-
-// UPDATE 
-
+// UPDATE
 router.patch("/:tweetId", verifyToken, updateTweet);
-
-/* DELETE */ 
-
-router.delete("/:tweetId", verifyToken, deleteTweet);
 
 export default router;

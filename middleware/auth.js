@@ -1,37 +1,31 @@
-import Jwt from "jsonwebtoken";
-import User from "../models/user.js"; // Import your User model
+import jwt from "jsonwebtoken";
+import User from "../models/user.js";
 
 export const verifyToken = async (req, res, next) => {
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith("Bearer")
+  ) {
     try {
-        // Check if the request is for logout
-        
-        if (req.path === '/auth/logout') {
-            // Skip token verification for logout endpoint
-            return next();
-        }
+      token = req.headers.authorization.split(" ")[1];
 
-        
-        let token = req.header("Auth");
+      //decodes token id
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-        if (!token) {
-            res.status(403).send("Access Denied");
-            return;
-        }
+      //console.log(decoded);
 
-        if (token.startsWith("Bearer ")) {
-            token = token.slice(7, token.length).trimLeft();
-        }
-
-        const decoded = Jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id); // Assuming your user ID is stored in the token
-
-        if (!user) {
-            throw new Error("User not found");
-        }
-
-        req.user = user; // Attach the user object to the request
-        next();
-    } catch (err) {
-        res.status(500).json({ error: err.message });
+      req.user = await User.findById(decoded.id).select("-password");
+      console.log(req.user._id);
+      next();
+    } catch (error) {
+      res.status(401).send("Not authorized, token failed");
     }
+  }
+
+  if (!token) {
+    res.status(401).send("Not authorized, no token");
+  }
 };
+export default verifyToken;

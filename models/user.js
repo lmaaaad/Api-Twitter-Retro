@@ -5,7 +5,7 @@ const UserSchema = new mongoose.Schema(
     tag: {
       type: String,
       unique: true,
-      //required: true,
+      required: true,
       min: 4,
       max: 50,
     },
@@ -30,12 +30,19 @@ const UserSchema = new mongoose.Schema(
     dob: {
       type: String,
     },
-    picturePath: {
+    profileImage: {
       type: String,
-      default: "",
+      default:
+        "https://res.cloudinary.com/djvjxp2am/image/upload/v1626828184/default-profile-image_kxvq0v.png",
+    },
+    bannerImage: {
+      type: String,
+    },
+    bio: {
+      type: String,
     },
     token: {
-      type: String,           // added filed to Store JWT token here
+      type: String,
     },
     tweets: [
       {
@@ -46,6 +53,14 @@ const UserSchema = new mongoose.Schema(
         },
       },
     ],
+    followersCount: {
+      type: Number,
+      default: 0,
+    },
+    followingCount: {
+      type: Number,
+      default: 0,
+    },
     following: [
       {
         type: mongoose.Schema.Types.ObjectId,
