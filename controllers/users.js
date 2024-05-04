@@ -8,6 +8,26 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import fs from "fs";
 import Tweet from "../models/tweet.js";
 
+
+//@description     Get or Search all users
+//@route           GET /api/user?search=
+//@access          Public
+export const searchUser = asyncHandler(async (req, res) => {
+  const keyword = req.query.search
+    ? {
+        $or: [
+          // Use a regular expression to match the full name with optional spaces between each character
+          { fullName: { $regex: req.query.search, $options: "i" } },
+          { email: { $regex: req.query.search, $options: "i" } },
+          { tag: { $regex: req.query.search, $options: "i" } },
+        ],
+      }
+    : {};
+
+  const users = await User.find(keyword, '-password').find({ _id: { $ne: req.user._id } });;
+  res.status(200).send(users);
+});
+
 export const getMe = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -349,3 +369,4 @@ export const getUserLikes = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
