@@ -7,7 +7,7 @@ import fs from "fs";
 import User from "../models/user.js";
 
 export const getProfile = async (req, res) => {
-  const tag = req.params.tag;
+  const id = req.params.id;
 
   const defaultPath = path.join(
     __dirname,
@@ -24,36 +24,23 @@ export const getProfile = async (req, res) => {
     "public",
     "assets",
     "profile",
-    tag
+    id + ".png"
   );
 
   try {
-    const user = await User.findOne({ tag: tag });
-
-    if (!user) {
-      res.sendFile(defaultPath);
-      //return res.status(404).json({ message: "User not found" });
-    }
-
-    const picturePath = user.profileImage;
-
-    if (!picturePath) {
-      res.sendFile(defaultPath);
-    }
-
     if (!fs.existsSync(imageFolder)) {
       return res.sendFile(defaultPath);
     }
 
-    // Send the image file back to the client
-    res.sendFile(imageFolder);
+    return res.sendFile(imageFolder);
   } catch (error) {
     console.error(error);
+    returnres.status(500).json({ message: "Internal server error" });
   }
 };
 
 export const getBanner = async (req, res) => {
-  const tag = req.params.tag;
+  const id = req.params.id;
 
   const absoluteImagePath = path.join(
     __dirname,
@@ -61,67 +48,32 @@ export const getBanner = async (req, res) => {
     "public",
     "assets",
     "banner",
-    tag
+    id + ".png"
   );
 
   try {
-    const user = await User.findOne({ tag: tag });
-
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-
-    const picturePath = user.bannerImage;
-
-    if (!picturePath) {
-      res.status(400).json({ message: "No banner" });
-    }
-
-    if (!fs.existsSync(imageFolder)) {
-      res.status(400).json({ message: "No banner" });
+    if (!fs.existsSync(absoluteImagePath)) {
+      res.status(404).json({ message: "No banner" });
     }
 
     res.sendFile(absoluteImagePath);
   } catch (error) {
     console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };
-
-/*
-export const getPostImages = async (req, res) => {
-  const id = req.params.id;
-  const number = req.params.number;
-
-  const imageFolder = path.join(__dirname, "public", "assets", "post", id);
-
-  const absoluteImagePath = path.join(
-    __dirname,
-    "public",
-    "assets",
-    "post",
-    id,
-    number
-  );
-
-  try {
-    if (!fs.existsSync(imageFolder)) {
-      return res.status(404).json({ error: "Post have no images" });
-    }
-
-    if (!fs.existsSync(absoluteImagePath)) {
-      return res.status(404).json({ error: "Image number not valid" });
-    }
-
-    res.sendFile(absoluteImagePath);
-  } catch (error) {
-    console.error(error);
-  }
-};*/
 
 export const getPostImage = async (req, res) => {
   const id = req.params.id;
 
-  const imagePath = path.join(__dirname, "public", "assets", "post", id);
+  const imagePath = path.join(
+    __dirname,
+    "..",
+    "public",
+    "assets",
+    "post",
+    id + ".png"
+  );
 
   try {
     if (!fs.existsSync(imagePath)) {
@@ -131,5 +83,14 @@ export const getPostImage = async (req, res) => {
     res.sendFile(imagePath);
   } catch (error) {
     console.error(error);
+  }
+};
+
+export const updateBanner = async (req, res) => {
+  try {
+    res.status(200).json({ message: "Banner image updated successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Internal server error" });
   }
 };

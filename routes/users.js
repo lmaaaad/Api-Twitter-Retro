@@ -1,35 +1,43 @@
 import express from "express";
-import Router from "express";
+import multer from "multer";
 import {
   getUserById,
-  //getUserByUsername,
- // getUserFriends,
+  getUserByTag,
+  getUserFriends,
   updateUser,
   followUser,
   unfollowUser,
   getMe,
-  getUsersById,
+  getUsersByIds,
+  addFieldUser,
 } from "../controllers/users.js";
 
 import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
-/* USER */
-router.get("/me", verifyToken, getMe);
-router.get("/:id", verifyToken, getUserById);
-router.get("/", getUsersById);
-//router.get("/by/username/:username", verifyToken, getUserByUsername); // GET User per username
-router.patch("/:id", verifyToken, updateUser);
+const profileStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./public/assets/profile");
+  },
+  filename: function (req, file, cb) {
+    cb(null, req.user.id + ".png");
+  },
+});
+
+const profileUpload = multer({ storage: profileStorage });
 
 /* FOLLOWERS */
-//router.get("/:id/followers", verifyToken, getUserFriends);
-//router.get("/users/:id/followers", verifyToken, xxx); // Users a user ID is following
+router.get("/:id/followers", verifyToken, getUserFriends);
 router.post("/:id/following", verifyToken, followUser);
-router.delete(
-  "/:source_user_id/following/:target_user_id",
-  verifyToken,
-  unfollowUser
-); // Unfollow routes, {source_user_id} is the authenticating user and {target_user_id} the user to unfollow
+router.delete("/:id/following", verifyToken, unfollowUser);
+
+/* USER */
+router.put("/", verifyToken, addFieldUser);
+router.get("/me", verifyToken, getMe);
+router.get("/:id", verifyToken, getUserById);
+router.get("/", getUsersByIds);
+router.get("/by/tag/:tag", verifyToken, getUserByTag);
+router.patch("/", verifyToken, profileUpload.single("profile"), updateUser);
 
 export default router;
