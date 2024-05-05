@@ -8,6 +8,9 @@ const tweetSchema = new Schema(
     body: {
       type: String,
     },
+    postImage: {
+      type: String,
+    },
     type: {
       type: String,
       enum: ["tweet", "reply", "retweet"],

@@ -1,10 +1,12 @@
 import User from "../models/user.js";
+import asyncHandler from "express-async-handler";
 
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import path from "path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import fs from "fs";
+import Tweet from "../models/tweet.js";
 
 export const getMe = async (req, res) => {
   try {
@@ -181,8 +183,187 @@ export const unfollowUser = async (req, res) => {
   }
 };
 
-export const addFieldUser = async (req, res) => {
-  //await User.updateMany({ bio: { $exists: false } }, { $set: { bio: "" } });
-  //User.updateMany({}, { $set: { "stat.followingCount": 0 } });
-  res.status(200).json({ message: "User modify success" });
+export const getSearchUsers = async (req, res) => {
+  const { search } = req.params;
+
+  if (!search) {
+    return res
+      .status(400)
+      .json({ error: "Veuillez fournir un terme de recherche" });
+  }
+
+  const filteredUsers = await User.find(
+    {
+      fullName: { $regex: `^${search}`, $options: "i" },
+    },
+    {
+      notifications: 0,
+      password: 0,
+      token: 0,
+      __v: 0,
+    }
+  ).limit(10);
+
+  res.status(200).json(filteredUsers);
+};
+
+export const getFollowers = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const followersIds = user.followers.slice(
+      startIndex,
+      startIndex + pageSize
+    );
+
+    const followers = await User.find({ _id: { $in: followersIds } });
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(user.followers.length / pageSize),
+      totalItems: user.followers.length,
+      data: followers,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getFollowing = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const followingIds = user.following.slice(
+      startIndex,
+      startIndex + pageSize
+    );
+
+    const following = await User.find({ _id: { $in: followingIds } });
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(user.following.length / pageSize),
+      totalItems: user.following.length,
+      data: following,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getUserPosts = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const postsIds = user.tweets.slice(startIndex, startIndex + pageSize);
+
+    const posts = await Tweet.find({ _id: { $in: postsIds } });
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(user.tweets.length / pageSize),
+      totalItems: user.tweets.length,
+      data: posts,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getUserRetweets = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const retweetsIds = user.retweets.slice(startIndex, startIndex + pageSize);
+
+    const retweets = await Tweet.find({ _id: { $in: retweetsIds } });
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(user.retweets.length / pageSize),
+      totalItems: user.retweets.length,
+      data: retweets,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getUserLikes = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const likesIds = user.likes.slice(startIndex, startIndex + pageSize);
+
+    const likes = await Tweet.find({ _id: { $in: likesIds } });
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(user.likes.length / pageSize),
+      totalItems: user.likes.length,
+      data: likes,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
 };

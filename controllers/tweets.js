@@ -46,11 +46,9 @@ export const getAllTweets = async (req, res) => {
 export const getTweetsPerIds = async (req, res) => {
   try {
     const ids = req.query.ids;
-    console.log(ids);
     var tweets = await Tweet.find({ _id: { $in: ids } }).sort({
       createdAt: -1,
     });
-    console.log(tweets);
     res.status(200).json(tweets);
   } catch (err) {
     res.status(400).json({ message: err.message });
@@ -70,22 +68,6 @@ export const getTweetById = async (req, res) => {
   }
 };
 
-export const updateTweet = async (req, res) => {
-  try {
-    const tweetId = req.params.tweetId;
-    const updateFields = req.body;
-    const updatedTweet = await Tweet.findByIdAndUpdate(tweetId, updateFields, {
-      new: true,
-    });
-    if (!updatedTweet) {
-      return res.status(404).json({ error: "Tweet not found" });
-    }
-    res.status(200).json(updatedTweet);
-  } catch (err) {
-    res.status(400).json({ message: err.message });
-  }
-};
-
 export const deleteTweet = async (req, res) => {
   try {
     const tweetId = req.params.id;
@@ -95,16 +77,16 @@ export const deleteTweet = async (req, res) => {
       author: author,
     });
 
-    const updatedUser = await User.findByIdAndUpdate(author, {
-      $pull: { tweets: tweetId }, // Supprime le tweet de la liste des tweets de l'utilisateur
-      $inc: { "stat.postCount": -1 }, // Décrémente le postCount de 1
+    const user = await User.findByIdAndUpdate(author, {
+      $pull: { tweets: tweetId },
+      $inc: { "stat.postCount": -1 },
     });
 
     if (!deletedTweet) {
       return res.status(404).json({ error: "Tweet not found" });
     }
 
-    res.status(200).json({ message: "Tweet deleted successfully" });
+    res.status(200).json({ userTweets: user.tweets, userStat: user.stat });
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -125,15 +107,17 @@ export const createTweet = async (req, res) => {
 
     const tweetId = savedTweet._id;
 
-    const updatedUser = await User.findByIdAndUpdate(author, {
+    const user = await User.findByIdAndUpdate(author, {
       $push: { tweets: tweetId },
       $inc: { "stat.postCount": 1 },
     });
 
     if (!req.file) {
-      return res
-        .status(201)
-        .json({ message: "Tweet created successfully", tweetId: tweetId });
+      return res.status(201).json({
+        userTweets: user.tweets,
+        userStat: user.stat,
+        tweetId: tweetId,
+      });
     }
 
     const tweetIdString = savedTweet._id.toString() + ".png";
@@ -164,12 +148,14 @@ export const createTweet = async (req, res) => {
       const imagePath = "/post/" + tweetIdString + ".png";
 
       Tweet.findByIdAndUpdate(tweetId, { postImage: imagePath }, { new: true });
-      return res
-        .status(201)
-        .json({ message: "Tweet created successfully", tweetId: tweetId });
+      return res.status(201).json({
+        userTweets: user.tweets,
+        userStat: user.stat,
+        tweetId: tweetId,
+      });
     });
   } catch (err) {
-    console.log(err.message);
+    console.error(err.message);
     return res.status(500).json({ message: err.message });
   }
 };
@@ -185,14 +171,12 @@ export const likeTweet = async (req, res) => {
       return res.status(404).json({ message: "Tweet not found" });
     }
 
-    // Check if the user has already liked the tweet
     if (user.likes.some((like) => like.equals(tweetId))) {
       return res
         .status(400)
         .json({ message: "Tweet already liked by the user" });
     }
 
-    // Add user ID to the list of likes
     user.likes.push(tweetId);
     user.stat.likeCount++;
     await user.save();
@@ -200,7 +184,11 @@ export const likeTweet = async (req, res) => {
     tweet.stat.like++;
     await tweet.save();
 
-    res.status(200).json({ message: "Tweet liked successfully" });
+    return res.status(200).json({
+      likes: user.likes,
+      tweetStat: tweet.stat,
+      userStat: user.stat,
+    });
   } catch (error) {
     console.error("Error liking tweet:", error);
     res.status(500).json({ error: "Internal server error" });
@@ -218,13 +206,11 @@ export const unlikeTweet = async (req, res) => {
       return res.status(404).json({ message: "Tweet not found" });
     }
 
-    // Check if the user has liked the tweet
     const userLikeIndex = user.likes.findIndex((like) => like.equals(tweetId));
     if (userLikeIndex === -1) {
       return res.status(400).json({ message: "Tweet not liked by the user" });
     }
 
-    // Remove the like from the likes array
     user.likes.splice(userLikeIndex, 1);
     user.stat.likeCount--;
     await user.save();
@@ -235,8 +221,11 @@ export const unlikeTweet = async (req, res) => {
     }
     await tweet.save();
 
-    // Return the updated tweet object in the response
-    return res.status(200).json({ message: "Tweet unliked successfully" });
+    return res.status(200).json({
+      likes: user.likes,
+      tweetStat: tweet.stat,
+      userStat: user.stat,
+    });
   } catch (error) {
     console.error("Error unliking tweet:", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -254,7 +243,6 @@ export const retweetTweet = async (req, res) => {
       return res.status(404).json({ message: "Tweet not found" });
     }
 
-    // Check if the user has already retweeted the tweet
     const alreadyRetweetedIndex = user.retweets.findIndex((retweet) =>
       retweet.equals(tweetId)
     );
@@ -267,7 +255,11 @@ export const retweetTweet = async (req, res) => {
 
       tweet.stat.retweet++;
       await tweet.save();
-      return res.status(200).json({ message: "Tweet retweeted successfully" });
+      return res.status(200).json({
+        retweets: user.retweets,
+        tweetStat: tweet.stat,
+        userStat: user.stat,
+      });
     } else {
       // If the user has already retweeted the tweet, return an error
       return res
@@ -304,9 +296,11 @@ export const unretweetTweet = async (req, res) => {
 
       tweet.stat.retweet--;
       await tweet.save();
-      return res
-        .status(200)
-        .json({ message: "Tweet unretweeted successfully" });
+      return res.status(200).json({
+        retweets: user.retweets,
+        tweetStat: tweet.stat,
+        userStat: user.stat,
+      });
     } else {
       // If the user has not retweeted the tweet, return an error
       return res
@@ -348,7 +342,11 @@ export const bookmarkTweet = async (req, res) => {
     tweet.stat.bookmark++;
     await tweet.save();
 
-    return res.status(200).json({ message: "Tweet bookmarked successfully" });
+    return res.status(200).json({
+      bookmarks: user.bookmarks,
+      tweetStat: tweet.stat,
+      userStat: user.stat,
+    });
   } catch (error) {
     console.error("Error bookmarking tweet:", error);
     return res.status(500).json({ error: "Internal server error" });
@@ -384,7 +382,34 @@ export const unbookmarkTweet = async (req, res) => {
     tweet.stat.bookmark++;
     await tweet.save();
 
-    return res.status(200).json({ message: "Tweet unbookmarked successfully" });
+    return res.status(200).json({
+      bookmarks: user.bookmarks,
+      tweetStat: tweet.stat,
+      userStat: user.stat,
+    });
+  } catch (error) {
+    console.error("Error unbookmarking tweet:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const searchLatest = async (req, res) => {
+  const { search } = req.params;
+
+  try {
+    const regex = new RegExp(`\\b${search}\\b`, "i");
+
+    const tweets = await Tweet.find({
+      body: regex,
+    })
+      .sort({ createdAt: -1 })
+      .limit(10);
+
+    if (!tweets) {
+      return res.status(404).json({ message: "Tweet not found" });
+    }
+
+    return res.status(200).json(tweets);
   } catch (error) {
     console.error("Error unbookmarking tweet:", error);
     return res.status(500).json({ error: "Internal server error" });
