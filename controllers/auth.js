@@ -3,14 +3,17 @@ import Jwt from "jsonwebtoken";
 import User from "../models/user.js";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import multer from "multer";
 import ResetToken from "../models/resetToken.js";
 
 /* REGISTER USER */
 export const register = async (req, res) => {
   try {
+
     const { tag, fullName, email, password } = req.body;
 
-    const profileImage = req.file ? req.file.path : null;
+    console.log(req.tag);
+
 
     const salt = await bcrypt.genSalt();
     const passwordHash = await bcrypt.hash(password, salt);
@@ -20,11 +23,10 @@ export const register = async (req, res) => {
       fullName,
       email,
       password: passwordHash,
-      profileImage,
     });
     const savedUser = await newUser.save();
-
-    res.status(201).json(savedUser);
+    const token = Jwt.sign({ id: savedUser._id }, process.env.JWT_SECRET);
+    res.status(200).json({ user: savedUser, token: token });
   } catch (err) {
     console.log(err);
     if (err.code === 11000) {

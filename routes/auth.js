@@ -17,14 +17,13 @@ const storage = multer.diskStorage({
     cb(null, "public/assets/profile");
   },
   filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now();
-    cb(null, uniqueSuffix + file.originalname);
+    // Use the user's ID as the filename
+    cb(null, req.userId + ".png"); // Assuming the file extension is png
   },
 });
+const uploadProfile = multer({ storage: storage }).single("avatar");
 
-const upload = multer(storage);
-
-router.post("/register", upload.single("pictures"), register);
+router.post("/register",register);
 
 /* ROUTES WITHOUT FILES */
 router.post("/forgot-password", requestPasswordReset);

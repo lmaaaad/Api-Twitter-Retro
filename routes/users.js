@@ -50,6 +50,5 @@ router.get("/by/tag/:tag", verifyToken, getUserByTag);
 router.get("/search/:search", getSearchUsers);
 router.patch("/", verifyToken, profileUpload.single("profile"), updateUser);
 
-router.get("/group", verifyToken,searchUser);
 
 export default router;

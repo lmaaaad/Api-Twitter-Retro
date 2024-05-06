@@ -8,7 +8,6 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import fs from "fs";
 import Tweet from "../models/tweet.js";
 
-
 //@description     Get or Search all users
 //@route           GET /api/user?search=
 //@access          Public
