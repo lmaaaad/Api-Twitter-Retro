@@ -14,6 +14,7 @@ import {
   getUserPosts,
   getUserLikes,
   getUserRetweets,
+  getUserBookmarks,
 } from "../controllers/users.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -40,6 +41,7 @@ router.delete("/:id/following", verifyToken, unfollowUser);
 router.get("/:tag/posts", verifyToken, getUserPosts);
 router.get("/:tag/likes", verifyToken, getUserLikes);
 router.get("/:tag/retweets", verifyToken, getUserRetweets);
+router.get("/:tag/bookmarks", verifyToken, getUserBookmarks);
 
 /* USER */
 router.get("/me", verifyToken, getMe);

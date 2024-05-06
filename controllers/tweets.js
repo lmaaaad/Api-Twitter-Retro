@@ -57,7 +57,8 @@ export const getTweetsPerIds = async (req, res) => {
 
 export const getTweetById = async (req, res) => {
   try {
-    const tweetId = req.params.tweetId;
+    const tweetId = req.params.id;
+    console.log(tweetId);
     const tweet = await Tweet.findById(tweetId);
     if (!tweet) {
       return res.status(404).json({ error: "Tweet not found" });
@@ -77,9 +78,13 @@ export const deleteTweet = async (req, res) => {
       author: author,
     });
 
+    const userTmp = await User.findById(author);
+
+    const postCount = userTmp.tweets.length;
+
     const user = await User.findByIdAndUpdate(author, {
       $pull: { tweets: tweetId },
-      $inc: { "stat.postCount": -1 },
+      $set: { "stat.postCount": postCount - 1 },
     });
 
     if (!deletedTweet) {
@@ -94,11 +99,12 @@ export const deleteTweet = async (req, res) => {
 
 export const createTweet = async (req, res) => {
   try {
-    const { body, type } = req.body;
+    const { body, type, replyId } = req.body;
     const author = req.user.id;
 
     try {
-      var tweet = new Tweet({ body, type, author });
+      const originalTweet = replyId;
+      var tweet = new Tweet({ body, type, author, originalTweet });
     } catch (error) {
       return res.status(400).json("Bad request Tweet");
     }
@@ -107,10 +113,31 @@ export const createTweet = async (req, res) => {
 
     const tweetId = savedTweet._id;
 
+    const userTmp = await User.findById(author);
+
+    const postCount = userTmp.tweets.length;
+
     const user = await User.findByIdAndUpdate(author, {
       $push: { tweets: tweetId },
-      $inc: { "stat.postCount": 1 },
+      $set: { "stat.postCount": postCount + 1 },
     });
+
+    if (type === "reply") {
+      const tweet = await Tweet.findById(replyId);
+
+      if (tweet) {
+        tweet.replies.push(tweetId);
+        tweet.stat.comment = tweet.replies.length;
+        await tweet.save();
+        if (!req.file) {
+          return res
+            .status(200)
+            .json({ replies: tweet.replies, stat: tweet.stat });
+        }
+      } else {
+        return res.status(404).json({ message: "Tweet non trouvé" });
+      }
+    }
 
     if (!req.file) {
       return res.status(201).json({
@@ -413,5 +440,46 @@ export const searchLatest = async (req, res) => {
   } catch (error) {
     console.error("Error unbookmarking tweet:", error);
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getComments = async (req, res) => {
+  try {
+    const { tweetId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const tweet = await Tweet.findById(tweetId).populate({
+      path: "replies",
+      populate: {
+        path: "author",
+        select: "tag fullName",
+      },
+    });
+
+    if (!tweet) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const commentsIds = tweet.replies.reverse();
+    console.log(commentsIds);
+
+    const lastCommentsIds = commentsIds.slice(
+      startIndex,
+      startIndex + pageSize
+    );
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(tweet.replies.length / pageSize),
+      totalItems: tweet.replies.length,
+      data: lastCommentsIds,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };

@@ -13,6 +13,7 @@ import {
   bookmarkTweet,
   unbookmarkTweet,
   searchLatest,
+  getComments,
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -37,6 +38,7 @@ router.delete("/:id", verifyToken, deleteTweet);
 router.get("/", verifyToken, getTweetsPerIds);
 router.get("/feed", verifyToken, getAllTweets);
 router.get("/:id", verifyToken, getTweetById);
+router.get("/:tweetId/comment", verifyToken, getComments);
 
 router.post("/:tweetId/like", verifyToken, likeTweet);
 router.post("/:tweetId/unlike", verifyToken, unlikeTweet);

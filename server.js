@@ -50,7 +50,7 @@ const PORT = process.env.PORT;
 const server = app.listen(PORT, () => console.log("server port: " + PORT));
 const io = new Server(server, {
   cors: {
-    origin: "https://twitter-retro.fr",
+    origin: ["https://twitter-retro.fr", "http://localhost:5000"],
   },
   pingTimeout: 60000,
 });
