@@ -43,6 +43,40 @@ export const getAllTweets = async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 };
+export const getFeed = async(req, res) => {
+  try {
+    // Get the current user's ID 
+    const currentUserId = req.user.id;
+
+    // Retrieve the list of users that the current user is following
+    const currentUser = await User.findById(currentUserId).populate("following");
+    const followedUserIds = currentUser.following.map(user => user._id);
+
+    // Retrieve tweets authored by followed users
+    const followedUserTweets = await Tweet.find({ author: { $in: followedUserIds } })
+      .sort({ createdAt: -1 })
+      .populate("author");
+
+    // // Retrieve popular hashtags
+    // const popularHashtags = await Hashtag.find({}).sort({ count: -1 }).limit(10); // Adjust limit as needed
+
+    // // Retrieve tweets containing popular hashtags
+    // const popularHashtagTweets = await Tweet.find({ hashtags: { $in: popularHashtags.map(hashtag => hashtag.text) } })
+    //   .sort({ createdAt: -1 })
+    //   .populate("author");
+
+    // // Combine followed user tweets and popular hashtag tweets
+    // const combinedFeed = [...followedUserTweets, ...popularHashtagTweets];
+
+    // // Sort combined feed by timestamp
+    // combinedFeed.sort((a, b) => b.createdAt - a.createdAt);
+
+    res.status(200).json(followedUserTweets);
+  } catch (err) {
+    res.status(400).json({ message: err.message });
+  }
+
+};
 
 export const getFeedTrendy = async(req, res) => {
   try {
@@ -136,7 +170,22 @@ export const getTweetById = async (req, res) => {
     res.status(400).json({ message: err.message });
   }
 };
+export const searchByHashtag = async (req, res) => {
+  try {
+    const hashtag = req.params.hashtag;
 
+    // Query the database for posts containing the hashtag
+    const posts = await Tweet.find({ body: { $regex: `#${hashtag}\\b`, $options: 'i' } })
+      .sort({ [`hashtags.${hashtag}`]: -1 }) // Sort posts by hashtag count in descending order
+      .limit(15); // Limit the number of posts to 15
+
+    // Return the list of posts to the client
+    res.json(posts);
+  } catch (error) {
+    console.error('Error searching for hashtag:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 export const deleteTweet = async (req, res) => {
   try {
     const tweetId = req.params.id;

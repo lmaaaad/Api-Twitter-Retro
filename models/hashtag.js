@@ -2,7 +2,8 @@ import mongoose from "mongoose";
 
 const { Schema, model } = mongoose;
 
-const hashtagSchema = new Schema({
+const hashtagSchema = new Schema(
+  {
   text: {
     type: String,
     required: true,
@@ -12,7 +13,9 @@ const hashtagSchema = new Schema({
     type: Number,
     default: 0,
   },
-});
+  },
+  { timestamps: true }
+);
 
 const Hashtag = model("Hashtag", hashtagSchema);
 
