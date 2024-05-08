@@ -58,7 +58,6 @@ export const getTweetsPerIds = async (req, res) => {
 export const getTweetById = async (req, res) => {
   try {
     const tweetId = req.params.id;
-    console.log(tweetId);
     const tweet = await Tweet.findById(tweetId);
     if (!tweet) {
       return res.status(404).json({ error: "Tweet not found" });
@@ -73,25 +72,65 @@ export const deleteTweet = async (req, res) => {
   try {
     const tweetId = req.params.id;
     const author = req.user.id;
-    const deletedTweet = await Tweet.findByIdAndDelete({
-      _id: tweetId,
-      author: author,
-    });
 
-    const userTmp = await User.findById(author);
+    const tweet = await Tweet.findById(tweetId);
 
-    const postCount = userTmp.tweets.length;
-
-    const user = await User.findByIdAndUpdate(author, {
-      $pull: { tweets: tweetId },
-      $set: { "stat.postCount": postCount - 1 },
-    });
-
-    if (!deletedTweet) {
+    if (!tweet) {
       return res.status(404).json({ error: "Tweet not found" });
     }
 
-    res.status(200).json({ userTweets: user.tweets, userStat: user.stat });
+    if (tweet.type === "tweet") {
+      const deletedTweet = await Tweet.findByIdAndDelete({
+        _id: tweetId,
+        author: author,
+      });
+
+      if (!deletedTweet) {
+        return res.status(404).json({ error: "Tweet not found" });
+      }
+
+      const userTmp = await User.findById(author);
+      const postCount = userTmp.tweets.length;
+      const user = await User.findByIdAndUpdate(author, {
+        $pull: { tweets: tweetId },
+        $set: { "stat.postCount": postCount - 1 },
+      });
+
+      return res
+        .status(200)
+        .json({ userTweets: user.tweets, userStat: user.stat });
+    }
+
+    if (tweet.type === "reply") {
+      const originalTweet = await Tweet.findById(tweet.originalTweet);
+
+      if (!originalTweet) {
+        return res.status(404).json({ error: "Original tweet not found" });
+      }
+
+      originalTweet.replies.pull(tweetId);
+      originalTweet.stat.comment = originalTweet.replies.length;
+      await originalTweet.save();
+
+      const deletedTweet = await Tweet.findByIdAndDelete({
+        _id: tweetId,
+        author: author,
+      });
+
+      if (!deletedTweet) {
+        return res.status(404).json({ error: "Tweet not found" });
+      }
+
+      const userTmp = await User.findById(author);
+      const postCount = userTmp.tweets.length;
+      const user = await User.findByIdAndUpdate(author, {
+        $pull: { tweets: tweetId },
+        $set: { "stat.postCount": postCount - 1 },
+      });
+      return res
+        .status(200)
+        .json({ userTweets: user.tweets, userStat: user.stat });
+    }
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -130,21 +169,11 @@ export const createTweet = async (req, res) => {
         tweet.stat.comment = tweet.replies.length;
         await tweet.save();
         if (!req.file) {
-          return res
-            .status(200)
-            .json({ replies: tweet.replies, stat: tweet.stat });
+          return res.status(200).json({ tweet: savedTweet, stat: tweet.stat });
         }
       } else {
         return res.status(404).json({ message: "Tweet non trouvé" });
       }
-    }
-
-    if (!req.file) {
-      return res.status(201).json({
-        userTweets: user.tweets,
-        userStat: user.stat,
-        tweetId: tweetId,
-      });
     }
 
     const tweetIdString = savedTweet._id.toString() + ".png";
@@ -175,6 +204,11 @@ export const createTweet = async (req, res) => {
       const imagePath = "/post/" + tweetIdString + ".png";
 
       Tweet.findByIdAndUpdate(tweetId, { postImage: imagePath }, { new: true });
+      try {
+        updateHashtags(hashtags);
+      } catch (error) {
+        console.error("Error updating hashtags:", error);
+      }
       return res.status(201).json({
         userTweets: user.tweets,
         userStat: user.stat,
@@ -464,7 +498,6 @@ export const getComments = async (req, res) => {
     const startIndex = (page - 1) * pageSize;
 
     const commentsIds = tweet.replies.reverse();
-    console.log(commentsIds);
 
     const lastCommentsIds = commentsIds.slice(
       startIndex,

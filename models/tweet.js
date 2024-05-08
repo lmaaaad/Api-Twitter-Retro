@@ -19,7 +19,7 @@ const tweetSchema = new Schema(
     originalTweet: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tweet",
-      autopopulate: true,
+      autopopulate: { select: "tag fullName", maxDepth: 1 },
     },
     stat: {
       view: {
@@ -52,7 +52,10 @@ const tweetSchema = new Schema(
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Tweet",
-        autopopulate: {},
+        autopopulate: {
+          select: "tag fullName body createdAt stat",
+          maxDepth: 2,
+        },
       },
     ],
     postImage: {

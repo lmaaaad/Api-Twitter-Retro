@@ -270,20 +270,29 @@ export const getUserPosts = async (req, res) => {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
 
-    const startIndex = (page - 1) * pageSize;
+    const skip = (page - 1) * pageSize;
 
-    const postsIds = user.tweets.reverse();
-
-    const lastPostIds = postsIds.slice(startIndex, startIndex + pageSize);
-
-    const posts = await Tweet.find({
-      _id: { $in: lastPostIds },
-      type: type,
-    });
+    try {
+      var posts = await Tweet.find(
+        {
+          _id: { $in: user.tweets },
+          type: type,
+        },
+        {
+          replies: 0,
+        }
+      )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize);
+    } catch (e) {
+      console.error(err);
+      res.status(500).json({ message: "Erreur Recherche MongoDb" });
+    }
 
     if (type == "reply") {
       var countReplies = await Tweet.countDocuments({
-        type: "reply",
+        type: type,
       });
     }
 
@@ -314,23 +323,30 @@ export const getUserRetweets = async (req, res) => {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
 
-    const startIndex = (page - 1) * pageSize;
+    const skip = (page - 1) * pageSize;
 
-    const retweetsIds = user.retweets.reverse();
+    const retweetsInDB = await Tweet.find(
+      { _id: { $in: user.retweets } },
+      {
+        replies: 0,
+      }
+    )
+      .skip(skip)
+      .limit(pageSize);
 
-    const lastRetweetsIds = retweetsIds.slice(
-      startIndex,
-      startIndex + pageSize
+    const existingRetweetsIds = retweetsInDB.map((retweet) => retweet._id);
+
+    await User.updateOne(
+      { _id: user._id },
+      { $pull: { retweets: { $nin: existingRetweetsIds } } }
     );
-
-    const retweets = await Tweet.find({ _id: { $in: lastRetweetsIds } });
 
     res.status(200).json({
       currentPage: page,
       pageSize: pageSize,
-      totalPages: Math.ceil(user.retweets.length / pageSize),
-      totalItems: user.retweets.length,
-      data: retweets,
+      totalPages: Math.ceil(existingRetweetsIds.length / pageSize),
+      totalItems: existingRetweetsIds.length,
+      data: retweetsInDB,
     });
   } catch (err) {
     console.error(err);
@@ -350,23 +366,30 @@ export const getUserBookmarks = async (req, res) => {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
 
-    const startIndex = (page - 1) * pageSize;
+    const skip = (page - 1) * pageSize;
 
-    const bookmarksIds = user.bookmarks.reverse();
+    const bookmarksInDB = await Tweet.find(
+      { _id: { $in: user.bookmarks } },
+      {
+        replies: 0,
+      }
+    )
+      .skip(skip)
+      .limit(pageSize);
 
-    const lastBookmarksIds = bookmarksIds.slice(
-      startIndex,
-      startIndex + pageSize
+    const existingBookmarksIds = bookmarksInDB.map((bookmark) => bookmark._id);
+
+    await User.updateOne(
+      { _id: user._id },
+      { $pull: { bookmarks: { $nin: existingBookmarksIds } } }
     );
-
-    const bookmarks = await Tweet.find({ _id: { $in: lastBookmarksIds } });
 
     res.status(200).json({
       currentPage: page,
       pageSize: pageSize,
-      totalPages: Math.ceil(user.bookmarks.length / pageSize),
-      totalItems: user.bookmarks.length,
-      data: bookmarks,
+      totalPages: Math.ceil(existingBookmarksIds.length / pageSize),
+      totalItems: existingBookmarksIds.length,
+      data: bookmarksInDB,
     });
   } catch (err) {
     console.error(err);
@@ -388,18 +411,29 @@ export const getUserLikes = async (req, res) => {
 
     const startIndex = (page - 1) * pageSize;
 
-    const likesIds = user.likes.reverse();
+    const likesInDB = await Tweet.find(
+      { _id: { $in: user.likes } },
+      {
+        replies: 0,
+      }
+    )
+      .sort({ createdAt: -1 })
+      .skip(startIndex)
+      .limit(pageSize);
 
-    const lastLikesIds = likesIds.slice(startIndex, startIndex + pageSize);
+    const existingLikesIds = likesInDB.map((like) => like._id);
 
-    const likes = await Tweet.find({ _id: { $in: lastLikesIds } });
+    await User.updateOne(
+      { _id: user._id },
+      { $pull: { likes: { $nin: existingLikesIds } } }
+    );
 
     res.status(200).json({
       currentPage: page,
       pageSize: pageSize,
-      totalPages: Math.ceil(user.likes.length / pageSize),
-      totalItems: user.likes.length,
-      data: likes,
+      totalPages: Math.ceil(existingLikesIds.length / pageSize),
+      totalItems: existingLikesIds.length,
+      data: likesInDB,
     });
   } catch (err) {
     console.error(err);
