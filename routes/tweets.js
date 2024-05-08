@@ -3,6 +3,7 @@ import multer from "multer";
 import {
   createTweet,
   getAllTweets,
+  getFeedTrendy,
   getTweetById,
   getTweetsPerIds,
   deleteTweet,
@@ -36,6 +37,7 @@ router.delete("/:id", verifyToken, deleteTweet);
 
 router.get("/", verifyToken, getTweetsPerIds);
 router.get("/feed", verifyToken, getAllTweets);
+router.get("/feedTrendy", verifyToken, getFeedTrendy);
 router.get("/:id", verifyToken, getTweetById);
 
 router.post("/:tweetId/like", verifyToken, likeTweet);
