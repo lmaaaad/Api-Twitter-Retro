@@ -171,19 +171,40 @@ export const getTweetById = async (req, res) => {
   }
 };
 export const searchByHashtag = async (req, res) => {
+ 
   try {
     const hashtag = req.params.hashtag;
+    const page = parseInt(req.query.page) || 1; // Current page number, default to 1
+    const pageSize = parseInt(req.query.pageSize) || 10; // Number of posts per page
 
-    // Query the database for posts containing the hashtag
+    // Calculate skip value to paginate results
+    const skip = (page - 1) * pageSize;
+
+    // Query database for posts containing the hashtag
     const posts = await Tweet.find({ body: { $regex: `#${hashtag}\\b`, $options: 'i' } })
-      .sort({ [`hashtags.${hashtag}`]: -1 }) // Sort posts by hashtag count in descending order
-      .limit(15); // Limit the number of posts to 15
+      .sort({ [`hashtags.${hashtag}`]: -1 })
+      .skip(skip) // Skip the specified number of documents
+      .limit(pageSize); // Limit the number of posts to the page size
 
-    // Return the list of posts to the client
-    res.json(posts);
+    // Count total number of posts containing the hashtag
+    const totalPosts = await Tweet.countDocuments({ body: { $regex: `#${hashtag}\\b`, $options: 'i' } });
+
+    // Calculate total number of pages
+    const totalPages = Math.ceil(totalPosts / pageSize);
+
+    // Construct pagination metadata
+    const pagination = {
+      currentPage: page,
+      totalPages: totalPages,
+      pageSize: pageSize,
+      totalCount: totalPosts,
+    };
+
+    // Send response with paginated posts and pagination metadata
+    return res.status(200).json({ posts, pagination });
   } catch (error) {
     console.error('Error searching for hashtag:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 };
 export const deleteTweet = async (req, res) => {
