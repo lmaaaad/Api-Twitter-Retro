@@ -3,6 +3,9 @@ import multer from "multer";
 import {
   createTweet,
   getAllTweets,
+  getFeed,
+  getFeedTrendy,
+  searchByHashtag,
   getTweetById,
   getTweetsPerIds,
   deleteTweet,
@@ -36,7 +39,10 @@ router.post("/", verifyToken, postUpload.single("image"), createTweet);
 router.delete("/:id", verifyToken, deleteTweet);
 
 router.get("/", verifyToken, getTweetsPerIds);
-router.get("/feed", verifyToken, getAllTweets);
+router.get("/feed", verifyToken, getFeed);
+router.get("/feedTrendy", verifyToken, getFeedTrendy);
+router.get("/searchByHashtag/:hashtag", verifyToken, searchByHashtag);
+
 router.get("/:id", verifyToken, getTweetById);
 router.get("/:tweetId/comment", verifyToken, getComments);
 
