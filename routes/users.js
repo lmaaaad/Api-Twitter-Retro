@@ -15,6 +15,7 @@ import {
   getUserLikes,
   getUserRetweets,
   getUserBookmarks,
+  searchUser,
 } from "../controllers/users.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -50,5 +51,7 @@ router.get("/", getUsersByIds);
 router.get("/by/tag/:tag", verifyToken, getUserByTag);
 router.get("/search/:search", getSearchUsers);
 router.patch("/", verifyToken, profileUpload.single("profile"), updateUser);
+
+router.get("/group", verifyToken, searchUser);
 
 export default router;

@@ -12,6 +12,7 @@ import authRoutes from "./routes/auth.js";
 import userRoutes from "./routes/users.js";
 import chatRoutes from "./routes/chatRoutes.js";
 import messageRoutes from "./routes/messageRouter.js";
+import searchRoutes from "./routes/search.js";
 import tweetsRoutes from "./routes/tweets.js";
 import imagesRoutes from "./routes/images.js";
 import swaggerUi from "swagger-ui-express";
@@ -44,6 +45,7 @@ app.use("/auth", authRoutes); //Mounts routes defined in authRoutes under the /a
 app.use("/users", userRoutes); //Mounts routes defined in userRoutes under the /users prefix. //Mounts routes defined in messageRoutes under the /message prefix.
 app.use("/tweets", tweetsRoutes); //Mounts routes defined in tweetsRoutes under the /tweets prefix.
 app.use("/images", imagesRoutes);
+app.use("/search", searchRoutes);
 
 const PORT = process.env.PORT;
 
