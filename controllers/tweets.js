@@ -78,30 +78,46 @@ export const getFeed = async(req, res) => {
 
 };
 
-export const getFeedTrendy = async(req, res) => {
+export const getFeedTrendy = async (req, res) => {
   try {
-    // Get the current user's ID 
     const currentUserId = req.user.id;
-
-    // Retrieve the list of users that the current user is following
     const currentUser = await User.findById(currentUserId).populate("following");
     const followedUserIds = currentUser.following.map(user => user._id);
 
-    // Retrieve tweets authored by followed users
-    const followedUserTweets = await Tweet.find({ author: { $in: followedUserIds } })
+    const page = parseInt(req.query.page) || 1; // Current page number, default to 1
+    const pageSize = parseInt(req.query.pageSize) || 10; // Number of tweets per page
+
+    const skip = (page - 1) * pageSize;
+
+    // Initial feed with popular hashtags
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const popularHashtags = await Tweet.aggregate([
+      { $match: { createdAt: { $gte: oneWeekAgo } } },
+      { $unwind: '$hashtags' },
+      { $group: { _id: '$hashtags', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 100}
+    ]);
+    
+    const popularHashtagTweets = await Tweet.find({ hashtags: { $in: popularHashtags.map(hashtag => hashtag._id) } })
       .sort({ createdAt: -1 })
-      .populate("author");
+      .populate("author")
+      .skip(skip)
+      .limit(pageSize);
 
-    // Retrieve popular hashtags
-    const popularHashtags = await Hashtag.find({}).sort({ count: -1 }).limit(10); // Adjust limit as needed
+    // Personalized recommendations based on user likes and retweets
+    const likedTweetIds = currentUser.likes.map(tweet => tweet._id);
+    const retweetedTweetIds = currentUser.retweets.map(tweet => tweet._id);
 
-    // Retrieve tweets containing popular hashtags
-    const popularHashtagTweets = await Tweet.find({ hashtags: { $in: popularHashtags.map(hashtag => hashtag.text) } })
-      .sort({ createdAt: -1 })
-      .populate("author");
+    const userActivityTweets = await Tweet.find({ $or: [{ _id: { $in: likedTweetIds } }, { _id: { $in: retweetedTweetIds } }] })
+      .populate("author")
+      .skip(skip)
+      .limit(pageSize);
 
-    // Combine followed user tweets and popular hashtag tweets
-    const combinedFeed = [...followedUserTweets, ...popularHashtagTweets];
+    // Combine initial feed and personalized recommendations
+    const combinedFeed = [...popularHashtagTweets, ...userActivityTweets];
 
     // Sort combined feed by timestamp
     combinedFeed.sort((a, b) => b.createdAt - a.createdAt);
@@ -110,9 +126,11 @@ export const getFeedTrendy = async(req, res) => {
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
-
 };
 
+
+
+//Function to extract Hashtags from tweets
 const extractHashtags = (body) => {
   const regex = /#(\w+)/g;
   const matches = body.match(regex);
