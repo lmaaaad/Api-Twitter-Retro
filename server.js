@@ -36,7 +36,7 @@ app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("tiny")); // common is a predefined log format.
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
 app.use(bodyParser.urlencoded({ limit: "30mb", extended: true }));
-app.use(cors()); // Handles Cross-Origin Resource Sharing (CORS) headers.
+app.use(cors({ origin: "https://twitter-retro.fr" })); // Handles Cross-Origin Resource Sharing (CORS) headers.
 app.use("/assets", express.static(path.join(__dirname, "public/assets")));
 
 app.use("/api/chat", chatRoutes); //Mounts routes defined in chatRoutes under the /chat prefix.
