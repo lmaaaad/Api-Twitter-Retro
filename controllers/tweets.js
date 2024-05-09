@@ -43,17 +43,21 @@ export const getAllTweets = async (req, res) => {
     return res.status(500).json({ message: err.message });
   }
 };
-export const getFeed = async(req, res) => {
+export const getFeed = async (req, res) => {
   try {
-    // Get the current user's ID 
+    // Get the current user's ID
     const currentUserId = req.user.id;
 
     // Retrieve the list of users that the current user is following
-    const currentUser = await User.findById(currentUserId).populate("following");
-    const followedUserIds = currentUser.following.map(user => user._id);
+    const currentUser = await User.findById(currentUserId).populate(
+      "following"
+    );
+    const followedUserIds = currentUser.following.map((user) => user._id);
 
     // Retrieve tweets authored by followed users
-    const followedUserTweets = await Tweet.find({ author: { $in: followedUserIds } })
+    const followedUserTweets = await Tweet.find({
+      author: { $in: followedUserIds },
+    })
       .sort({ createdAt: -1 })
       .populate("author");
 
@@ -75,7 +79,6 @@ export const getFeed = async(req, res) => {
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
-
 };
 
 export const getFeedTrendy = async (req, res) => {
@@ -135,7 +138,7 @@ const extractHashtags = (body) => {
   const regex = /#(\w+)/g;
   const matches = body.match(regex);
   if (matches) {
-    return matches.map(match => ({ text: match.substring(1) }));
+    return matches.map((match) => ({ text: match.substring(1) }));
   } else {
     return [];
   }
@@ -153,7 +156,7 @@ const updateHashtags = async (hashtags) => {
         await existingHashtag.save();
       } else {
         // If the hashtag doesn't exist, create a new document
-        const newHashtag = new Hashtag({ text:tag.text, count: 1 });
+        const newHashtag = new Hashtag({ text: tag.text, count: 1 });
         await newHashtag.save();
       }
     }
@@ -162,7 +165,6 @@ const updateHashtags = async (hashtags) => {
     //throw error; // Propagate the error back to the caller
   }
 };
-
 
 export const getTweetsPerIds = async (req, res) => {
   try {
@@ -178,7 +180,7 @@ export const getTweetsPerIds = async (req, res) => {
 
 export const getTweetById = async (req, res) => {
   try {
-    const tweetId = req.params.tweetId;
+    const tweetId = req.params.id;
     const tweet = await Tweet.findById(tweetId);
     if (!tweet) {
       return res.status(404).json({ error: "Tweet not found" });
@@ -189,7 +191,6 @@ export const getTweetById = async (req, res) => {
   }
 };
 export const searchByHashtag = async (req, res) => {
- 
   try {
     const hashtag = req.params.hashtag;
     const page = parseInt(req.query.page) || 1; // Current page number, default to 1
@@ -199,13 +200,17 @@ export const searchByHashtag = async (req, res) => {
     const skip = (page - 1) * pageSize;
 
     // Query database for posts containing the hashtag
-    const posts = await Tweet.find({ body: { $regex: `#${hashtag}\\b`, $options: 'i' } })
+    const posts = await Tweet.find({
+      body: { $regex: `#${hashtag}\\b`, $options: "i" },
+    })
       .sort({ [`hashtags.${hashtag}`]: -1 })
       .skip(skip) // Skip the specified number of documents
       .limit(pageSize); // Limit the number of posts to the page size
 
     // Count total number of posts containing the hashtag
-    const totalPosts = await Tweet.countDocuments({ body: { $regex: `#${hashtag}\\b`, $options: 'i' } });
+    const totalPosts = await Tweet.countDocuments({
+      body: { $regex: `#${hashtag}\\b`, $options: "i" },
+    });
 
     // Calculate total number of pages
     const totalPages = Math.ceil(totalPosts / pageSize);
@@ -221,45 +226,89 @@ export const searchByHashtag = async (req, res) => {
     // Send response with paginated posts and pagination metadata
     return res.status(200).json({ posts, pagination });
   } catch (error) {
-    console.error('Error searching for hashtag:', error);
-    return res.status(500).json({ error: 'Internal server error' });
+    console.error("Error searching for hashtag:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
 export const deleteTweet = async (req, res) => {
   try {
     const tweetId = req.params.id;
     const author = req.user.id;
-    const deletedTweet = await Tweet.findByIdAndDelete({
-      _id: tweetId,
-      author: author,
-    });
 
-    const user = await User.findByIdAndUpdate(author, {
-      $pull: { tweets: tweetId },
-      $inc: { "stat.postCount": -1 },
-    });
+    const tweet = await Tweet.findById(tweetId);
 
-    if (!deletedTweet) {
+    if (!tweet) {
       return res.status(404).json({ error: "Tweet not found" });
     }
 
-    const hashtags = extractHashtags(deletedTweet.body);
-    await Promise.all(
-      hashtags.map(async (tag) => {
-        const existingHashtag = await Hashtag.findOneAndUpdate(
-          { text: tag.text },
-          { $inc: { count: -1 } },
-          { new: true }
-        );
+    if (tweet.type === "tweet") {
+      const deletedTweet = await Tweet.findByIdAndDelete({
+        _id: tweetId,
+        author: author,
+      });
 
-        // If the count becomes zero, remove the hashtag from the database
-        if (existingHashtag.count === 0) {
-          await Hashtag.findOneAndDelete({ text: tag.text });
-        }
-      })
-    );
+      if (!deletedTweet) {
+        return res.status(404).json({ error: "Tweet not found" });
+      }
 
-    res.status(200).json({ userTweets: user.tweets, userStat: user.stat });
+      const userTmp = await User.findById(author);
+      const postCount = userTmp.tweets.length;
+      const user = await User.findByIdAndUpdate(author, {
+        $pull: { tweets: tweetId },
+        $set: { "stat.postCount": postCount - 1 },
+      });
+
+      const hashtags = extractHashtags(deletedTweet.body);
+      await Promise.all(
+        hashtags.map(async (tag) => {
+          const existingHashtag = await Hashtag.findOneAndUpdate(
+            { text: tag.text },
+            { $inc: { count: -1 } },
+            { new: true }
+          );
+
+          // If the count becomes zero, remove the hashtag from the database
+          if (existingHashtag.count === 0) {
+            await Hashtag.findOneAndDelete({ text: tag.text });
+          }
+        })
+      );
+
+      return res
+        .status(200)
+        .json({ userTweets: user.tweets, userStat: user.stat });
+    }
+
+    if (tweet.type === "reply") {
+      const originalTweet = await Tweet.findById(tweet.originalTweet);
+
+      if (!originalTweet) {
+        return res.status(404).json({ error: "Original tweet not found" });
+      }
+
+      originalTweet.replies.pull(tweetId);
+      originalTweet.stat.comment = originalTweet.replies.length;
+      await originalTweet.save();
+
+      const deletedTweet = await Tweet.findByIdAndDelete({
+        _id: tweetId,
+        author: author,
+      });
+
+      if (!deletedTweet) {
+        return res.status(404).json({ error: "Tweet not found" });
+      }
+
+      const userTmp = await User.findById(author);
+      const postCount = userTmp.tweets.length;
+      const user = await User.findByIdAndUpdate(author, {
+        $pull: { tweets: tweetId },
+        $set: { "stat.postCount": postCount - 1 },
+      });
+      return res
+        .status(200)
+        .json({ userTweets: user.tweets, userStat: user.stat });
+    }
   } catch (err) {
     res.status(400).json({ message: err.message });
   }
@@ -267,13 +316,13 @@ export const deleteTweet = async (req, res) => {
 
 export const createTweet = async (req, res) => {
   try {
-    const { body, type } = req.body;
+    const { body, type, replyId } = req.body;
     const author = req.user.id;
     const hashtags = extractHashtags(body);
 
-
     try {
-      var tweet = new Tweet({ body, type, author });
+      const originalTweet = replyId;
+      var tweet = new Tweet({ body, type, author, originalTweet });
     } catch (error) {
       return res.status(400).json("Bad request Tweet");
     }
@@ -282,10 +331,29 @@ export const createTweet = async (req, res) => {
 
     const tweetId = savedTweet._id;
 
+    const userTmp = await User.findById(author);
+
+    const postCount = userTmp.tweets.length;
+
     const user = await User.findByIdAndUpdate(author, {
       $push: { tweets: tweetId },
-      $inc: { "stat.postCount": 1 },
+      $set: { "stat.postCount": postCount + 1 },
     });
+
+    if (type === "reply") {
+      const tweet = await Tweet.findById(replyId);
+
+      if (tweet) {
+        tweet.replies.push(tweetId);
+        tweet.stat.comment = tweet.replies.length;
+        await tweet.save();
+        if (!req.file) {
+          return res.status(200).json({ tweet: savedTweet, stat: tweet.stat });
+        }
+      } else {
+        return res.status(404).json({ message: "Tweet non trouvé" });
+      }
+    }
 
     if (!req.file) {
       try {
@@ -598,5 +666,45 @@ export const searchLatest = async (req, res) => {
   } catch (error) {
     console.error("Error unbookmarking tweet:", error);
     return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getComments = async (req, res) => {
+  try {
+    const { tweetId } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const tweet = await Tweet.findById(tweetId).populate({
+      path: "replies",
+      populate: {
+        path: "author",
+        select: "tag fullName",
+      },
+    });
+
+    if (!tweet) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const commentsIds = tweet.replies.reverse();
+
+    const lastCommentsIds = commentsIds.slice(
+      startIndex,
+      startIndex + pageSize
+    );
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(tweet.replies.length / pageSize),
+      totalItems: tweet.replies.length,
+      data: lastCommentsIds,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };

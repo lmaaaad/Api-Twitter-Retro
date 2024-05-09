@@ -8,6 +8,27 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import fs from "fs";
 import Tweet from "../models/tweet.js";
 
+//@description     Get or Search all users
+//@route           GET /api/user?search=
+//@access          Public
+export const searchUser = asyncHandler(async (req, res) => {
+  const keyword = req.query.search
+    ? {
+        $or: [
+          // Use a regular expression to match the full name with optional spaces between each character
+          { fullName: { $regex: req.query.search, $options: "i" } },
+          { email: { $regex: req.query.search, $options: "i" } },
+          { tag: { $regex: req.query.search, $options: "i" } },
+        ],
+      }
+    : {};
+
+  const users = await User.find(keyword, "-password").find({
+    _id: { $ne: req.user._id },
+  });
+  res.status(200).send(users);
+});
+
 export const getMe = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -278,6 +299,7 @@ export const getFollowing = async (req, res) => {
 export const getUserPosts = async (req, res) => {
   try {
     const { tag } = req.params;
+    const type = String(req.query.type);
     const page = parseInt(req.query.page) || 1;
     const pageSize = parseInt(req.query.pageSize) || 10;
 
@@ -289,15 +311,38 @@ export const getUserPosts = async (req, res) => {
 
     const startIndex = (page - 1) * pageSize;
 
-    const postsIds = user.tweets.slice(startIndex, startIndex + pageSize);
+    const postsIds = user.tweets.reverse();
 
-    const posts = await Tweet.find({ _id: { $in: postsIds } });
+    // Vérifier si les identifiants existent dans la base de données
+    const validPostIds = await Promise.all(
+      postsIds.map(async (id) => {
+        const postExists = await Tweet.exists({ _id: id });
+        return postExists ? id : null;
+      })
+    );
 
-    res.status(200).json({
+    // Filtrer les identifiants qui existent réellement dans la base de données
+    const lastPostIds = validPostIds.filter((id) => id !== null);
+
+    const posts = await Tweet.find({
+      _id: { $in: lastPostIds },
+      type: type,
+    })
+      .limit(pageSize)
+      .skip(startIndex);
+
+    let count;
+    if (type == "reply") {
+      count = await Tweet.countDocuments({ type: "reply" });
+    } else {
+      count = user.tweets.length;
+    }
+
+    return res.status(200).json({
       currentPage: page,
       pageSize: pageSize,
-      totalPages: Math.ceil(user.tweets.length / pageSize),
-      totalItems: user.tweets.length,
+      totalPages: Math.ceil(count / pageSize),
+      totalItems: count,
       data: posts,
     });
   } catch (err) {
@@ -305,7 +350,6 @@ export const getUserPosts = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
-
 export const getUserRetweets = async (req, res) => {
   try {
     const { tag } = req.params;
@@ -320,9 +364,14 @@ export const getUserRetweets = async (req, res) => {
 
     const startIndex = (page - 1) * pageSize;
 
-    const retweetsIds = user.retweets.slice(startIndex, startIndex + pageSize);
+    const retweetsIds = user.retweets.reverse();
 
-    const retweets = await Tweet.find({ _id: { $in: retweetsIds } });
+    const lastRetweetsIds = retweetsIds.slice(
+      startIndex,
+      startIndex + pageSize
+    );
+
+    const retweets = await Tweet.find({ _id: { $in: lastRetweetsIds } });
 
     res.status(200).json({
       currentPage: page,
@@ -330,6 +379,42 @@ export const getUserRetweets = async (req, res) => {
       totalPages: Math.ceil(user.retweets.length / pageSize),
       totalItems: user.retweets.length,
       data: retweets,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getUserBookmarks = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const bookmarksIds = user.bookmarks.reverse();
+
+    const lastBookmarksIds = bookmarksIds.slice(
+      startIndex,
+      startIndex + pageSize
+    );
+
+    const bookmarks = await Tweet.find({ _id: { $in: lastBookmarksIds } });
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(user.bookmarks.length / pageSize),
+      totalItems: user.bookmarks.length,
+      data: bookmarks,
     });
   } catch (err) {
     console.error(err);
@@ -351,9 +436,11 @@ export const getUserLikes = async (req, res) => {
 
     const startIndex = (page - 1) * pageSize;
 
-    const likesIds = user.likes.slice(startIndex, startIndex + pageSize);
+    const likesIds = user.likes.reverse();
 
-    const likes = await Tweet.find({ _id: { $in: likesIds } });
+    const lastLikesIds = likesIds.slice(startIndex, startIndex + pageSize);
+
+    const likes = await Tweet.find({ _id: { $in: lastLikesIds } });
 
     res.status(200).json({
       currentPage: page,

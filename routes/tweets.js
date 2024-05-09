@@ -16,6 +16,7 @@ import {
   bookmarkTweet,
   unbookmarkTweet,
   searchLatest,
+  getComments,
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -43,6 +44,7 @@ router.get("/feedTrendy", verifyToken, getFeedTrendy);
 router.get("/searchByHashtag/:hashtag", verifyToken, searchByHashtag);
 
 router.get("/:id", verifyToken, getTweetById);
+router.get("/:tweetId/comment", verifyToken, getComments);
 
 router.post("/:tweetId/like", verifyToken, likeTweet);
 router.post("/:tweetId/unlike", verifyToken, unlikeTweet);

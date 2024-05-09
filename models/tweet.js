@@ -46,13 +46,13 @@ const tweetSchema = new Schema(
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      autopopulate: { select: "tag", maxDepth: 1 },
+      autopopulate: { select: "tag fullName", maxDepth: 1 },
     },
     replies: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Tweet",
-        autopopulate: { maxDepth: 1 },
+        autopopulate: {},
       },
     ],
     postImage: {
