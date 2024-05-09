@@ -5,6 +5,7 @@ import {
   getAllTweets,
   getFeed,
   getFeedTrendy,
+  getTopHashtags,
   searchByHashtag,
   getTweetById,
   getTweetsPerIds,
@@ -41,6 +42,7 @@ router.delete("/:id", verifyToken, deleteTweet);
 router.get("/", verifyToken, getTweetsPerIds);
 router.get("/feed", verifyToken, getFeed);
 router.get("/feedTrendy", verifyToken, getFeedTrendy);
+router.get("/topHashtags", verifyToken, getTopHashtags);
 router.get("/searchByHashtag/:hashtag", verifyToken, searchByHashtag);
 
 router.get("/:id", verifyToken, getTweetById);
