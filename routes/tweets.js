@@ -14,6 +14,8 @@ import {
   unbookmarkTweet,
   searchLatest,
   getComments,
+  getFeedTrendy,
+  searchByHashtag,
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -33,11 +35,12 @@ const postUpload = multer({ storage: storage });
 
 router.post("/", verifyToken, postUpload.single("image"), createTweet);
 router.delete("/:id", verifyToken, deleteTweet);
+router.get("/:id", verifyToken, getTweetById);
 
 router.get("/", verifyToken, getTweetsPerIds);
 router.get("/feed", verifyToken, getAllTweets);
-router.get("/:id", verifyToken, getTweetById);
-router.get("/:tweetId/comment", verifyToken, getComments);
+router.get("/feedTrendy", verifyToken, getFeedTrendy);
+router.get("/searchByHashtag/:hashtag", searchByHashtag);
 
 router.post("/:tweetId/like", verifyToken, likeTweet);
 router.post("/:tweetId/unlike", verifyToken, unlikeTweet);
@@ -45,6 +48,7 @@ router.post("/:tweetId/retweet", verifyToken, retweetTweet);
 router.post("/:tweetId/unretweet", verifyToken, unretweetTweet);
 router.post("/:tweetId/bookmark", verifyToken, bookmarkTweet);
 router.post("/:tweetId/unbookmark", verifyToken, unbookmarkTweet);
+router.get("/:tweetId/comment", verifyToken, getComments);
 
 router.get("/latest/:search", verifyToken, searchLatest);
 

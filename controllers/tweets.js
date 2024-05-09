@@ -6,6 +6,7 @@ import { dirname } from "path";
 import path from "path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 import fs from "fs";
+import Hashtag from "../models/hashtag.js";
 
 export const getAllTweets = async (req, res) => {
   try {
@@ -68,6 +69,140 @@ export const getTweetById = async (req, res) => {
   }
 };
 
+export const getFeedTrendy = async (req, res) => {
+  try {
+    console.log("HERRE ------------------");
+    const currentUserId = req.user.id;
+    const currentUser = await User.findById(currentUserId).populate(
+      "following"
+    );
+    const followedUserIds = currentUser.following.map((user) => user._id);
+
+    const page = parseInt(req.query.page) || 1; // Current page number, default to 1
+    const pageSize = parseInt(req.query.pageSize) || 10; // Number of tweets per page
+
+    const skip = (page - 1) * pageSize;
+
+    // Initial feed with popular hashtags
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const popularHashtags = await Tweet.aggregate([
+      { $match: { createdAt: { $gte: oneWeekAgo } } },
+      { $unwind: "$hashtags" },
+      { $group: { _id: "$hashtags", count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 100 },
+    ]);
+
+    const popularHashtagTweets = await Tweet.find({
+      hashtags: { $in: popularHashtags.map((hashtag) => hashtag._id) },
+    })
+      .sort({ createdAt: -1 })
+      .populate("author")
+      .skip(skip)
+      .limit(pageSize);
+
+    // Personalized recommendations based on user likes and retweets
+    const likedTweetIds = currentUser.likes.map((tweet) => tweet._id);
+    const retweetedTweetIds = currentUser.retweets.map((tweet) => tweet._id);
+
+    const userActivityTweets = await Tweet.find({
+      $or: [
+        { _id: { $in: likedTweetIds } },
+        { _id: { $in: retweetedTweetIds } },
+      ],
+    })
+      .populate("author")
+      .skip(skip)
+      .limit(pageSize);
+
+    // Combine initial feed and personalized recommendations
+    const combinedFeed = [...popularHashtagTweets, ...userActivityTweets];
+
+    // Sort combined feed by timestamp
+    combinedFeed.sort((a, b) => b.createdAt - a.createdAt);
+
+    res.status(200).json(combinedFeed);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+};
+
+//Function to extract Hashtags from tweets
+const extractHashtags = (body) => {
+  const regex = /#(\w+)/g;
+  const matches = body.match(regex);
+  if (matches) {
+    return matches.map((match) => ({ text: match.substring(1) }));
+  } else {
+    return [];
+  }
+};
+
+// Function to update hashtag documents
+const updateHashtags = async (hashtags) => {
+  try {
+    for (const tag of hashtags) {
+      // Check if the hashtag already exists in the database
+      const existingHashtag = await Hashtag.findOne({ text: tag.text });
+      if (existingHashtag) {
+        // If the hashtag already exists, increment its count
+        existingHashtag.count += 1;
+        await existingHashtag.save();
+      } else {
+        // If the hashtag doesn't exist, create a new document
+        const newHashtag = new Hashtag({ text: tag.text, count: 1 });
+        await newHashtag.save();
+      }
+    }
+  } catch (error) {
+    console.error("Error updating hashtags:", error);
+    //throw error; // Propagate the error back to the caller
+  }
+};
+
+export const searchByHashtag = async (req, res) => {
+  try {
+    const hashtag = req.params.hashtag;
+    const page = parseInt(req.query.page) || 1; // Current page number, default to 1
+    const pageSize = parseInt(req.query.pageSize) || 10; // Number of posts per page
+
+    // Calculate skip value to paginate results
+    const skip = (page - 1) * pageSize;
+
+    // Query database for posts containing the hashtag
+    const posts = await Tweet.find({
+      body: { $regex: `#${hashtag}\\b`, $options: "i" },
+    })
+      .sort({ [`hashtags.${hashtag}`]: -1 })
+      .skip(skip) // Skip the specified number of documents
+      .limit(pageSize); // Limit the number of posts to the page size
+
+    // Count total number of posts containing the hashtag
+    const totalPosts = await Tweet.countDocuments({
+      body: { $regex: `#${hashtag}\\b`, $options: "i" },
+    });
+
+    // Calculate total number of pages
+    const totalPages = Math.ceil(totalPosts / pageSize);
+
+    // Construct pagination metadata
+    const pagination = {
+      currentPage: page,
+      totalPages: totalPages,
+      pageSize: pageSize,
+      totalCount: totalPosts,
+    };
+
+    // Send response with paginated posts and pagination metadata
+    return res.status(200).json({ posts, pagination });
+  } catch (error) {
+    console.error("Error searching for hashtag:", error);
+    return res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 export const deleteTweet = async (req, res) => {
   try {
     const tweetId = req.params.id;
@@ -95,6 +230,22 @@ export const deleteTweet = async (req, res) => {
         $pull: { tweets: tweetId },
         $set: { "stat.postCount": postCount - 1 },
       });
+
+      const hashtags = extractHashtags(deletedTweet.body);
+      await Promise.all(
+        hashtags.map(async (tag) => {
+          const existingHashtag = await Hashtag.findOneAndUpdate(
+            { text: tag.text },
+            { $inc: { count: -1 } },
+            { new: true }
+          );
+
+          // If the count becomes zero, remove the hashtag from the database
+          if (existingHashtag.count === 0) {
+            await Hashtag.findOneAndDelete({ text: tag.text });
+          }
+        })
+      );
 
       return res
         .status(200)
@@ -140,6 +291,7 @@ export const createTweet = async (req, res) => {
   try {
     const { body, type, replyId } = req.body;
     const author = req.user.id;
+    const hashtags = extractHashtags(body);
 
     try {
       const originalTweet = replyId;
@@ -163,6 +315,11 @@ export const createTweet = async (req, res) => {
 
     if (type === "tweet") {
       if (!req.file) {
+        try {
+          await updateHashtags(hashtags);
+        } catch (error) {
+          console.error("Error updating hashtags:", error);
+        }
         return res.status(201).json({
           userTweets: user.tweets,
           userStat: user.stat,
@@ -214,6 +371,11 @@ export const createTweet = async (req, res) => {
       const imagePath = "/post/" + tweetIdString + ".png";
 
       Tweet.findByIdAndUpdate(tweetId, { postImage: imagePath }, { new: true });
+      try {
+        updateHashtags(hashtags);
+      } catch (error) {
+        console.error("Error updating hashtags:", error);
+      }
       try {
         updateHashtags(hashtags);
       } catch (error) {
