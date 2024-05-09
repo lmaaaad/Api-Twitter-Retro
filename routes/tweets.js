@@ -25,7 +25,6 @@ const storage = multer.diskStorage({
     cb(null, "./public/assets/post");
   },
   filename: function (req, file, cb) {
-    console.log(file.originalname);
     cb(null, file.originalname);
   },
 });

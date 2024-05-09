@@ -161,6 +161,16 @@ export const createTweet = async (req, res) => {
       $set: { "stat.postCount": postCount + 1 },
     });
 
+    if (type === "tweet") {
+      if (!req.file) {
+        return res.status(201).json({
+          userTweets: user.tweets,
+          userStat: user.stat,
+          tweetId: tweetId,
+        });
+      }
+    }
+
     if (type === "reply") {
       const tweet = await Tweet.findById(replyId);
 
