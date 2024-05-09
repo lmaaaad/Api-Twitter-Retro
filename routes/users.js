@@ -1,35 +1,54 @@
 import express from "express";
-import Router from "express";
+import multer from "multer";
 import {
   getUserById,
-  //getUserByUsername,
- // getUserFriends,
+  getUserByTag,
   updateUser,
   followUser,
   unfollowUser,
   getMe,
-  getUsersById,
+  getUsersByIds,
+  getSearchUsers,
+  getFollowers,
+  getFollowing,
+  getUserPosts,
+  getUserLikes,
+  getUserRetweets,
+  getUserBookmarks,
 } from "../controllers/users.js";
 
 import { verifyToken } from "../middleware/auth.js";
 
 const router = express.Router();
 
+const profileStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "./public/assets/profile");
+  },
+  filename: function (req, file, cb) {
+    cb(null, req.user.id + ".png");
+  },
+});
+
+const profileUpload = multer({ storage: profileStorage });
+
+/* FOLLOWERS */
+router.get("/:tag/followers", verifyToken, getFollowers);
+router.get("/:tag/following", verifyToken, getFollowing);
+router.post("/:id/following", verifyToken, followUser);
+router.delete("/:id/following", verifyToken, unfollowUser);
+
+router.get("/:tag/posts", verifyToken, getUserPosts);
+router.get("/:tag/likes", verifyToken, getUserLikes);
+router.get("/:tag/retweets", verifyToken, getUserRetweets);
+router.get("/:tag/bookmarks", verifyToken, getUserBookmarks);
+
 /* USER */
 router.get("/me", verifyToken, getMe);
 router.get("/:id", verifyToken, getUserById);
-router.get("/", getUsersById);
-//router.get("/by/username/:username", verifyToken, getUserByUsername); // GET User per username
-router.patch("/:id", verifyToken, updateUser);
-
-/* FOLLOWERS */
-//router.get("/:id/followers", verifyToken, getUserFriends);
-//router.get("/users/:id/followers", verifyToken, xxx); // Users a user ID is following
-router.post("/:id/following", verifyToken, followUser);
-router.delete(
-  "/:source_user_id/following/:target_user_id",
-  verifyToken,
-  unfollowUser
-); // Unfollow routes, {source_user_id} is the authenticating user and {target_user_id} the user to unfollow
+router.get("/", getUsersByIds);
+router.get("/by/tag/:tag", verifyToken, getUserByTag);
+router.get("/search/:search", getSearchUsers);
+router.patch("/", verifyToken, profileUpload.single("profile"), updateUser);
 
 export default router;

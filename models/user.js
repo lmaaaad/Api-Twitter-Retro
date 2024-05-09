@@ -51,13 +51,49 @@ const UserSchema = new mongoose.Schema(
         },
       },
     ],
-    followersCount: {
-      type: Number,
-      default: 0,
-    },
-    followingCount: {
-      type: Number,
-      default: 0,
+    likes: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Tweet",
+        autopopulate: {
+          maxDepth: 2,
+        },
+      },
+    ],
+    retweets: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Tweet",
+        autopopulate: {
+          maxDepth: 2,
+        },
+      },
+    ],
+    stat: {
+      postCount: {
+        type: Number,
+        default: 0,
+      },
+      likeCount: {
+        type: Number,
+        default: 0,
+      },
+      retweetCount: {
+        type: Number,
+        default: 0,
+      },
+      bookmarkCount: {
+        type: Number,
+        default: 0,
+      },
+      followersCount: {
+        type: Number,
+        default: 0,
+      },
+      followingCount: {
+        type: Number,
+        default: 0,
+      },
     },
     following: [
       {
@@ -67,6 +103,13 @@ const UserSchema = new mongoose.Schema(
       },
     ],
     followers: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+        autopopulate: { select: "tag", maxDepth: 1 },
+      },
+    ],
+    bookmarks: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "User",

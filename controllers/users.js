@@ -1,4 +1,12 @@
 import User from "../models/user.js";
+import asyncHandler from "express-async-handler";
+
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import path from "path";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import fs from "fs";
+import Tweet from "../models/tweet.js";
 
 export const getMe = async (req, res) => {
   try {
@@ -36,15 +44,13 @@ export const getUserById = async (req, res) => {
   }
 };
 
-export const getUsersById = async (req, res) => {
-  console.log(" ===== USERRRS =====");
+export const getUsersByIds = async (req, res) => {
   try {
     const ids = req.query.ids;
     const users = await User.find(
       { _id: { $in: ids } },
       { notifications: 0, password: 0, token: 0, __v: 0 }
     );
-    console.log(users);
 
     res.status(200).json(users);
   } catch (err) {
@@ -52,11 +58,11 @@ export const getUsersById = async (req, res) => {
   }
 };
 
-/*
-export const getUserByUsername = async (req, res) => {
+export const getUserByTag = async (req, res) => {
   try {
-    const { username } = req.params;
-    const user = await User.findOne({ username });
+    const { tag } = req.params;
+
+    const user = await User.findOne({ tag });
 
     if (!user) {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
@@ -67,47 +73,27 @@ export const getUserByUsername = async (req, res) => {
     console.error(err);
     res.status(500).json({ message: "Erreur serveur" });
   }
-};*/
+};
 
 export const updateUser = async (req, res) => {
   try {
-    const userId = req.params.id;
-    const updateFields = req.body;
+    const { name, bio } = req.body;
+    const author = req.user.id;
 
     // Find  user by ID and update
-    const updatedUser = await User.findByIdAndUpdate(userId, updateFields, {
-      new: true,
-    });
-
-    console.log(req.body);
-    console.log(updatedUser);
-
-    // if (!updatedUser) {
-    //   return res.status(404).json({ msg: 'User not found' });
-    // }
-
-    res.status(200).json(updatedUser);
-  } catch (err) {
-    res.status(404).json({ message: err.message });
-  }
-};
-
-export const getUserFriends = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const user = await User.findById(id);
-    const friends = await Promise.all(
-      user.friends.map((id) => User.findById(id))
-    );
-
-
-    const formattedFriends = friends.map(
-      ({ _id, userName, firstName, lasrName, email, picturePath }) => {
-        return { _id, userName, firstName, lasrName, email, picturePath };
+    const updatedUser = await User.findByIdAndUpdate(
+      author,
+      { fullName: name, bio: bio },
+      {
+        new: true,
       }
     );
 
-    res.status(200).json(formattedFriends);
+    if (!updatedUser) {
+      return res.status(404).json({ msg: "User not found" });
+    }
+
+    res.status(200).json(updatedUser);
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -115,26 +101,25 @@ export const getUserFriends = async (req, res) => {
 
 export const followUser = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const currentUser = req.user; // Assuming the current user is attached to the request object
+    const { id } = req.params;
+    const currentUser = req.user;
 
-    // Check if the user is already following the specified user
-    if (currentUser.following.includes(userId)) {
+    if (currentUser.following.includes(id)) {
       return res
         .status(400)
         .json({ message: "User is already being followed" });
     }
 
-    // Add the specified user to the current user's following list
-    currentUser.following.push(userId);
+    currentUser.following.push(id);
+    currentUser.stat.followingCount++;
     await currentUser.save();
 
-    // Update the specified user's followers list to include the current user
-    const followedUser = await User.findById(userId);
+    const followedUser = await User.findById(id);
     if (!followedUser) {
       return res.status(404).json({ message: "User not found" });
     }
     followedUser.followers.push(currentUser._id);
+    followedUser.stat.followersCount++;
     await followedUser.save();
 
     res.status(200).json({ message: "User followed successfully" });
@@ -145,33 +130,313 @@ export const followUser = async (req, res) => {
 };
 export const unfollowUser = async (req, res) => {
   try {
-    const { userId } = req.params;
-    const currentUser = req.user; // Assuming the current user is attached to the request object
+    const { id } = req.params;
+    const currentUser = req.user;
 
-    // Check if the user is not following the specified user
-    if (!currentUser.following.includes(userId)) {
+    if (!currentUser.following.includes(id)) {
       return res.status(400).json({ message: "User is not being followed" });
     }
 
-    // Remove the specified user from the current user's following list
-    currentUser.following = currentUser.following.filter(
-      (id) => id.toString() !== userId
-    );
+    currentUser.following = currentUser.following.filter((_id) => {
+      if (_id) {
+        _id.toString() !== id;
+      }
+    });
+    currentUser.stat.followingCount--;
+
     await currentUser.save();
 
-    // Remove the current user from the specified user's followers list
-    const followedUser = await User.findById(userId);
+    const currentUserID = currentUser._id ? currentUser._id.toString() : null;
+    const followedUser = await User.findById(id);
     if (!followedUser) {
+      console.error("user not found");
       return res.status(404).json({ message: "User not found" });
     }
     followedUser.followers = followedUser.followers.filter(
-      (id) => id.toString() !== currentUser._id.toString()
+      (_id) => _id.toString() !== currentUserID
     );
+    followedUser.stat.followersCount--;
     await followedUser.save();
 
     res.status(200).json({ message: "User unfollowed successfully" });
   } catch (err) {
     console.error("Unfollow user error:", err);
     res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+export const getSearchUsers = async (req, res) => {
+  const { search } = req.params;
+
+  if (!search) {
+    return res
+      .status(400)
+      .json({ error: "Veuillez fournir un terme de recherche" });
+  }
+
+  const filteredUsers = await User.find(
+    {
+      fullName: { $regex: `^${search}`, $options: "i" },
+    },
+    {
+      notifications: 0,
+      password: 0,
+      token: 0,
+      __v: 0,
+    }
+  ).limit(10);
+
+  res.status(200).json(filteredUsers);
+};
+
+export const getFollowers = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const followersIds = user.followers.slice(
+      startIndex,
+      startIndex + pageSize
+    );
+
+    const followers = await User.find({ _id: { $in: followersIds } });
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(user.followers.length / pageSize),
+      totalItems: user.followers.length,
+      data: followers,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getFollowing = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const followingIds = user.following.slice(
+      startIndex,
+      startIndex + pageSize
+    );
+
+    const following = await User.find({ _id: { $in: followingIds } });
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(user.following.length / pageSize),
+      totalItems: user.following.length,
+      data: following,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getUserPosts = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const type = req.query.type;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const skip = (page - 1) * pageSize;
+
+    try {
+      var posts = await Tweet.find(
+        {
+          _id: { $in: user.tweets },
+          type: type,
+        },
+        {
+          replies: 0,
+        }
+      )
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize);
+    } catch (e) {
+      console.error(err);
+      res.status(500).json({ message: "Erreur Recherche MongoDb" });
+    }
+
+    if (type == "reply") {
+      var countReplies = await Tweet.countDocuments({
+        type: type,
+      });
+    }
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(
+        (type == "reply" ? countReplies : user.tweets.length) / pageSize
+      ),
+      totalItems: type == "reply" ? countReplies : user.tweets.length,
+      data: posts,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getUserRetweets = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const skip = (page - 1) * pageSize;
+
+    const retweetsInDB = await Tweet.find(
+      { _id: { $in: user.retweets } },
+      {
+        replies: 0,
+      }
+    )
+      .skip(skip)
+      .limit(pageSize);
+
+    const existingRetweetsIds = retweetsInDB.map((retweet) => retweet._id);
+
+    await User.updateOne(
+      { _id: user._id },
+      { $pull: { retweets: { $nin: existingRetweetsIds } } }
+    );
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(existingRetweetsIds.length / pageSize),
+      totalItems: existingRetweetsIds.length,
+      data: retweetsInDB,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getUserBookmarks = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const skip = (page - 1) * pageSize;
+
+    const bookmarksInDB = await Tweet.find(
+      { _id: { $in: user.bookmarks } },
+      {
+        replies: 0,
+      }
+    )
+      .skip(skip)
+      .limit(pageSize);
+
+    const existingBookmarksIds = bookmarksInDB.map((bookmark) => bookmark._id);
+
+    await User.updateOne(
+      { _id: user._id },
+      { $pull: { bookmarks: { $nin: existingBookmarksIds } } }
+    );
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(existingBookmarksIds.length / pageSize),
+      totalItems: existingBookmarksIds.length,
+      data: bookmarksInDB,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+export const getUserLikes = async (req, res) => {
+  try {
+    const { tag } = req.params;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = parseInt(req.query.pageSize) || 10;
+
+    const user = await User.findOne({ tag });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const startIndex = (page - 1) * pageSize;
+
+    const likesInDB = await Tweet.find(
+      { _id: { $in: user.likes } },
+      {
+        replies: 0,
+      }
+    )
+      .sort({ createdAt: -1 })
+      .skip(startIndex)
+      .limit(pageSize);
+
+    const existingLikesIds = likesInDB.map((like) => like._id);
+
+    await User.updateOne(
+      { _id: user._id },
+      { $pull: { likes: { $nin: existingLikesIds } } }
+    );
+
+    res.status(200).json({
+      currentPage: page,
+      pageSize: pageSize,
+      totalPages: Math.ceil(existingLikesIds.length / pageSize),
+      totalItems: existingLikesIds.length,
+      data: likesInDB,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };

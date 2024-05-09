@@ -5,20 +5,12 @@ import nodemailer from "nodemailer";
 import crypto from "crypto";
 import ResetToken from "../models/resetToken.js";
 
-/*
-import tweet from "../models/tweet.js"
-import reply from "../models/reply.js"
-import like from "../models/like.js"
-import notification from "../models/notification.js"
-import followrequest from "../models/followrequest.js" 
-*/
-
 /* REGISTER USER */
 export const register = async (req, res) => {
   try {
     const { tag, fullName, email, password } = req.body;
 
-    const picturePath = req.file ? req.file.path : null;
+    const profileImage = req.file ? req.file.path : null;
 
     const salt = await bcrypt.genSalt();
     const passwordHash = await bcrypt.hash(password, salt);
@@ -28,9 +20,8 @@ export const register = async (req, res) => {
       fullName,
       email,
       password: passwordHash,
-      picturePath,
+      profileImage,
     });
-
     const savedUser = await newUser.save();
 
     res.status(201).json(savedUser);

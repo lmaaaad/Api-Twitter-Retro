@@ -592,6 +592,90 @@ paths:
                   type: string
             example:
               files: ["image1.jpg", "image2.jpg"]
+  /images/banner:
+    post:
+      tags: 
+        - Images
+      summary: Upload a banner
+      responses:
+        '200':
+          description: banner images uploaded successfully
+          schema:
+            type: object
+            properties:
+              files:
+                type: array
+                items:
+                  type: string
+            example:
+              files: ["image1.jpg", "image2.jpg"]
+  /messages/chat/:
+    post:
+      tags: 
+        - Messages
+      summary: Open a message session
+      responses:
+        '200':
+          description: Open session success
+  /messages/chat/:
+    get:
+      tags: 
+        - Messages
+      summary: Get user messages session
+      responses:
+        '200':
+          description: Get success
+  /messages/chat/group:
+    post:
+      tags: 
+        - Messages
+      summary: Create a group of users
+      responses:
+        '200':
+          description: create success
+  /messages/chat/rename:
+    put:
+      tags: 
+        - Messages
+      summary: Rename un groupe
+      responses:
+        '200':
+          description: rename success
+  /messages/chat/grouperemove:
+    put:
+      tags: 
+        - Messages
+      summary: delete a user from a group
+      responses:
+        '200':
+          description: delete success
+  /messages/chat/groupeadd:
+    put:
+      tags: 
+        - Messages
+      summary: add a user from a group
+      responses:
+        '200':
+          description: add success
+  /api/messages:
+    post:
+      tags: 
+        - Messages
+      summary: send a message
+      responses:
+        '200':
+          description: send success
+  /api/messages/{chatId}:
+    post:
+      tags: 
+        - Messages
+      summary: get list of messages from chat 
+      responses:
+        '200':
+          description: get success
+
+
+              
 
 components:
   schemas:

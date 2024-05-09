@@ -4,7 +4,6 @@ import User from "../models/user.js"; // Import your User model
 export const verifyToken = async (req, res, next) => {
   try {
     if (req.path === "/auth/logout") {
-      // Skip token verification for logout endpoint
       return next();
     }
 

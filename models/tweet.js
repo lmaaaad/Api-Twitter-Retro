@@ -8,6 +8,9 @@ const tweetSchema = new Schema(
     body: {
       type: String,
     },
+    postImage: {
+      type: String,
+    },
     type: {
       type: String,
       enum: ["tweet", "reply", "retweet"],
@@ -16,7 +19,7 @@ const tweetSchema = new Schema(
     originalTweet: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Tweet",
-      autopopulate: true,
+      autopopulate: { select: "tag fullName", maxDepth: 1 },
     },
     stat: {
       view: {
@@ -40,29 +43,19 @@ const tweetSchema = new Schema(
         default: 0,
       },
     },
-    retweets: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "Tweet",
-      },
-    ],
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      autopopulate: { select: "tag", maxDepth: 1 },
+      autopopulate: { select: "tag fullName", maxDepth: 1 },
     },
-    likes: [
-      {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: "User",
-        autopopulate: { select: "tag", maxDepth: 1 },
-      },
-    ],
     replies: [
       {
         type: mongoose.Schema.Types.ObjectId,
         ref: "Tweet",
-        autopopulate: { maxDepth: 1 },
+        autopopulate: {
+          select: "tag fullName body createdAt stat",
+          maxDepth: 2,
+        },
       },
     ],
     bookmarks: [
