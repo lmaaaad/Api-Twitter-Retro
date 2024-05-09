@@ -16,6 +16,7 @@ import {
   getComments,
   getFeedTrendy,
   searchByHashtag,
+  getTopHashtags,
 } from "../controllers/tweets.js";
 
 import { verifyToken } from "../middleware/auth.js";
@@ -33,13 +34,15 @@ const storage = multer.diskStorage({
 
 const postUpload = multer({ storage: storage });
 
-router.post("/", verifyToken, postUpload.single("image"), createTweet);
-router.delete("/:id", verifyToken, deleteTweet);
+router.get("/feedTrendy", verifyToken, getFeedTrendy);
+router.get("/topHashtags", verifyToken, getTopHashtags);
+router.get("/feed", verifyToken, getAllTweets);
 router.get("/:id", verifyToken, getTweetById);
 
+router.post("/", verifyToken, postUpload.single("image"), createTweet);
+router.delete("/:id", verifyToken, deleteTweet);
+
 router.get("/", verifyToken, getTweetsPerIds);
-router.get("/feed", verifyToken, getAllTweets);
-router.get("/feedTrendy", verifyToken, getFeedTrendy);
 router.get("/searchByHashtag/:hashtag", searchByHashtag);
 
 router.post("/:tweetId/like", verifyToken, likeTweet);

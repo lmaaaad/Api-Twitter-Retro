@@ -30,7 +30,11 @@ const __filename = fileURLToPath(import.meta.url); //to get the current file nam
 export const __dirname = path.dirname(__filename); // to get the current directory name
 dotenv.config(); // to loads environment variables from a .env file into process.env , and we can store sensitive data there.
 app.use(express.json()); // to parse incoming data into JSON
-app.use(helmet()); //Sets various HTTP headers to improve security
+app.use(
+  helmet({
+    crossOriginResourcePolicy: false,
+  })
+); //Sets various HTTP headers to improve security
 app.use(helmet.crossOriginResourcePolicy({ policy: "cross-origin" }));
 app.use(morgan("tiny")); // common is a predefined log format.
 app.use(bodyParser.json({ limit: "30mb", extended: true }));
@@ -50,7 +54,7 @@ const PORT = process.env.PORT;
 const server = app.listen(PORT, () => console.log("server port: " + PORT));
 const io = new Server(server, {
   cors: {
-    origin: ["https://twitter-retro.fr", "http://localhost:5000"],
+    origin: "*",
   },
   pingTimeout: 60000,
 });

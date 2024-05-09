@@ -688,3 +688,37 @@ export const getComments = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+export const getTopHashtags = async (req, res) => {
+  try {
+    // Calculate pagination parameters
+    const page = parseInt(req.query.page) || 1; // Current page number, default to 1
+    const pageSize = parseInt(req.query.pageSize) || 10; // Number of hashtags per page
+    const skip = (page - 1) * pageSize;
+
+    // Calculate the date one week ago
+
+    // Aggregate tweets with hashtags created in the last week
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    const topHashtags = await Hashtag.aggregate([
+      { $match: { createdAt: { $gte: oneWeekAgo } } }, // Match hashtags created within the last week
+      { $group: { _id: "$text", count: { $sum: 1 } } }, // Group hashtags by text and calculate count
+      { $sort: { count: -1 } }, // Sort hashtags by count in descending order
+      { $limit: 100 }, // Limit results to the top 100 hashtags
+    ]);
+    // Return the top hashtags and pagination metadata as JSON response
+    res.status(200).json({
+      hashtags: topHashtags,
+      pagination: {
+        currentPage: page,
+        pageSize: pageSize,
+        totalCount: topHashtags.length, // This may not be accurate if there are more than 100 hashtags in the last week
+      },
+    });
+  } catch (err) {
+    // Handle errors
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+};
