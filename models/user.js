@@ -95,6 +95,15 @@ const UserSchema = new mongoose.Schema(
         default: 0,
       },
     },
+    recommendation: {
+      type: [
+        {
+          type: String,
+          maxlength: 100,
+        },
+      ],
+      default: [],
+    },
     following: [
       {
         type: mongoose.Schema.Types.ObjectId,

@@ -29,11 +29,15 @@ export const getAllTweets = async (req, res) => {
       .skip(skip)
       .limit(pageSize);
 
-    console.log(tweets);
-
     const totalTweets = await Tweet.countDocuments({
       user: { $in: currentUser.following },
     });
+
+    for (const tweet of tweets) {
+      tweet.stat.view += 1;
+      await tweet.save();
+    }
+
     const totalPages = Math.ceil(totalTweets / pageSize);
 
     const pagination = {
@@ -77,58 +81,47 @@ export const getTweetById = async (req, res) => {
 
 export const getFeedTrendy = async (req, res) => {
   try {
-    const currentUserId = req.user.id;
-    const currentUser = await User.findById(currentUserId).populate(
-      "following"
-    );
-    const followedUserIds = currentUser.following.map((user) => user._id);
+    const user = req.user;
 
     const page = parseInt(req.query.page) || 1; // Current page number, default to 1
     const pageSize = parseInt(req.query.pageSize) || 10; // Number of tweets per page
 
     const skip = (page - 1) * pageSize;
 
-    // Initial feed with popular hashtags
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const popularHashtags = await Tweet.aggregate([
-      { $match: { createdAt: { $gte: oneWeekAgo } } },
-      { $unwind: "$hashtags" },
-      { $group: { _id: "$hashtags", count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 100 },
+    //if (!user.recommandation || user.recommandation.length == 0) {
+    const topHashtags = await Hashtag.aggregate([
+      { $match: { createdAt: { $gte: oneWeekAgo } } }, // Match hashtags created within the last week
+      { $group: { _id: "$text", count: { $sum: 1 } } }, // Group hashtags by text and calculate count
+      { $sort: { count: -1 } }, // Sort hashtags by count in descending order
+      { $limit: 10 }, // Limit results to the top 100 hashtags
     ]);
 
-    const popularHashtagTweets = await Tweet.find({
-      hashtags: { $in: popularHashtags.map((hashtag) => hashtag._id) },
-    })
-      .sort({ createdAt: -1 })
-      .populate("author")
-      .skip(skip)
-      .limit(pageSize);
+    const tweets = [];
+    // Iterate over each top hashtag
+    for (const hashtagObj of topHashtags) {
+      const hashtag = hashtagObj._id;
+      // Query database for posts containing the hashtag
+      const posts = await Tweet.find({
+        body: { $regex: `#${hashtag}\\b`, $options: "i" },
+      })
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(pageSize);
+      tweets.push(...posts);
+    }
+    const totalTweets = tweets.length;
+    const totalPages = Math.ceil(totalTweets / pageSize);
 
-    // Personalized recommendations based on user likes and retweets
-    const likedTweetIds = currentUser.likes.map((tweet) => tweet._id);
-    const retweetedTweetIds = currentUser.retweets.map((tweet) => tweet._id);
+    const uniqueTweets = Array.from(
+      new Set(tweets.map((tweet) => JSON.stringify(tweet)))
+    ).map((json) => JSON.parse(json));
 
-    const userActivityTweets = await Tweet.find({
-      $or: [
-        { _id: { $in: likedTweetIds } },
-        { _id: { $in: retweetedTweetIds } },
-      ],
-    })
-      .populate("author")
-      .skip(skip)
-      .limit(pageSize);
+    const tweetsResult = uniqueTweets.slice(skip, skip + pageSize);
 
-    // Combine initial feed and personalized recommendations
-    const combinedFeed = [...popularHashtagTweets, ...userActivityTweets];
-
-    // Sort combined feed by timestamp
-    combinedFeed.sort((a, b) => b.createdAt - a.createdAt);
-
-    res.status(200).json(combinedFeed);
+    return res.status(200).json({ tweets: tweetsResult, totalPages });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -199,6 +192,11 @@ export const searchByHashtag = async (req, res) => {
       pageSize: pageSize,
       totalCount: totalPosts,
     };
+
+    for (const tweet of posts) {
+      tweet.stat.view += 1;
+      await tweet.save();
+    }
 
     // Send response with paginated posts and pagination metadata
     return res.status(200).json({ posts, pagination });
@@ -399,6 +397,7 @@ export const createTweet = async (req, res) => {
 };
 
 export const likeTweet = async (req, res) => {
+  // TODO
   const { tweetId } = req.params;
   const user = req.user;
 
@@ -417,6 +416,13 @@ export const likeTweet = async (req, res) => {
 
     user.likes.push(tweetId);
     user.stat.likeCount++;
+    const hashtags = extractHashtags(tweet.body);
+    for (const hashtag of hashtags) {
+      user.recommandation.push(hashtag);
+      if (user.recommendations.length > 100) {
+        user.recommendations.shift();
+      }
+    }
     await user.save();
 
     tweet.stat.like++;
@@ -489,6 +495,13 @@ export const retweetTweet = async (req, res) => {
       // If the user has not retweeted the tweet, add their ID to the retweets array
       user.retweets.push(tweetId);
       user.stat.retweetCount++;
+      const hashtags = extractHashtags(tweet.body);
+      for (const hashtag of hashtags) {
+        user.recommandation.push(hashtag);
+        if (user.recommendations.length > 100) {
+          user.recommendations.shift();
+        }
+      }
       await user.save();
 
       tweet.stat.retweet++;
@@ -647,6 +660,11 @@ export const searchLatest = async (req, res) => {
       return res.status(404).json({ message: "Tweet not found" });
     }
 
+    for (const tweet of tweets) {
+      tweet.stat.view += 1;
+      await tweet.save();
+    }
+
     return res.status(200).json(tweets);
   } catch (error) {
     console.error("Error unbookmarking tweet:", error);
@@ -711,7 +729,7 @@ export const getTopHashtags = async (req, res) => {
       { $match: { createdAt: { $gte: oneWeekAgo } } }, // Match hashtags created within the last week
       { $group: { _id: "$text", count: { $sum: 1 } } }, // Group hashtags by text and calculate count
       { $sort: { count: -1 } }, // Sort hashtags by count in descending order
-      { $limit: 100 }, // Limit results to the top 100 hashtags
+      { $limit: 10 }, // Limit results to the top 100 hashtags
     ]);
     // Return the top hashtags and pagination metadata as JSON response
     res.status(200).json({

@@ -296,6 +296,11 @@ export const getUserPosts = async (req, res) => {
       });
     }
 
+    for (const tweet of posts) {
+      tweet.stat.view += 1;
+      await tweet.save();
+    }
+
     res.status(200).json({
       currentPage: page,
       pageSize: pageSize,
