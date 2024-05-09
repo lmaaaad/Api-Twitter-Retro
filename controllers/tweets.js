@@ -10,26 +10,32 @@ import Hashtag from "../models/hashtag.js";
 
 export const getAllTweets = async (req, res) => {
   try {
+    const currentUser = req.user;
     // Extract pagination parameters from query string
     const page = parseInt(req.query.page) || 1; // Current page number, default to 1
     const pageSize = parseInt(req.query.pageSize) || 20; // Number of tweets per page
 
+    if (!currentUser) {
+      return res.status(400).json({ message: err.message });
+    }
+
     // Calculate skip value to paginate results
     const skip = (page - 1) * pageSize;
 
-    // Query database for tweets with pagination
-    var tweets = await Tweet.find()
+    console.log(currentUser.following);
+
+    const tweets = await Tweet.find({ author: { $in: currentUser.following } })
       .sort({ createdAt: -1 })
       .skip(skip)
       .limit(pageSize);
 
-    // Count total number of tweets (for pagination metadata)
-    const totalTweets = await Tweet.countDocuments();
+    console.log(tweets);
 
-    // Calculate total number of pages
+    const totalTweets = await Tweet.countDocuments({
+      user: { $in: currentUser.following },
+    });
     const totalPages = Math.ceil(totalTweets / pageSize);
 
-    // Construct pagination metadata
     const pagination = {
       currentPage: page,
       totalPages: totalPages,
@@ -71,7 +77,6 @@ export const getTweetById = async (req, res) => {
 
 export const getFeedTrendy = async (req, res) => {
   try {
-    console.log("HERRE ------------------");
     const currentUserId = req.user.id;
     const currentUser = await User.findById(currentUserId).populate(
       "following"
