@@ -22,8 +22,6 @@ export const getAllTweets = async (req, res) => {
     // Calculate skip value to paginate results
     const skip = (page - 1) * pageSize;
 
-    console.log(currentUser.following);
-
     const tweets = await Tweet.find({ author: { $in: currentUser.following } })
       .sort({ createdAt: -1 })
       .skip(skip)
@@ -91,19 +89,46 @@ export const getFeedTrendy = async (req, res) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    //if (!user.recommandation || user.recommandation.length == 0) {
-    const topHashtags = await Hashtag.aggregate([
-      { $match: { createdAt: { $gte: oneWeekAgo } } }, // Match hashtags created within the last week
-      { $group: { _id: "$text", count: { $sum: 1 } } }, // Group hashtags by text and calculate count
-      { $sort: { count: -1 } }, // Sort hashtags by count in descending order
-      { $limit: 10 }, // Limit results to the top 100 hashtags
-    ]);
+    if (!user.recommendation) {
+      res.status(500).json({ message: "Database error" });
+    }
+
+    if (user.recommendation.length == 0) {
+      const topHashtags = await Hashtag.aggregate([
+        { $match: { createdAt: { $gte: oneWeekAgo } } }, // Match hashtags created within the last week
+        { $group: { _id: "$text", count: { $sum: 1 } } }, // Group hashtags by text and calculate count
+        { $sort: { count: -1 } }, // Sort hashtags by count in descending order
+        { $limit: 10 }, // Limit results to the top 100 hashtags
+      ]);
+
+      const tweets = [];
+      // Iterate over each top hashtag
+      for (const hashtagObj of topHashtags) {
+        const hashtag = hashtagObj._id;
+        // Query database for posts containing the hashtag
+        const posts = await Tweet.find({
+          body: { $regex: `#${hashtag}\\b`, $options: "i" },
+        })
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(pageSize);
+        tweets.push(...posts);
+      }
+      const totalTweets = tweets.length;
+      const totalPages = Math.ceil(totalTweets / pageSize);
+
+      const uniqueTweets = Array.from(
+        new Set(tweets.map((tweet) => JSON.stringify(tweet)))
+      ).map((json) => JSON.parse(json));
+
+      const tweetsResult = uniqueTweets.slice(skip, skip + pageSize);
+
+      return res.status(200).json({ tweets: tweetsResult, totalPages });
+    }
 
     const tweets = [];
     // Iterate over each top hashtag
-    for (const hashtagObj of topHashtags) {
-      const hashtag = hashtagObj._id;
-      // Query database for posts containing the hashtag
+    for (const hashtag of user.recommendation) {
       const posts = await Tweet.find({
         body: { $regex: `#${hashtag}\\b`, $options: "i" },
       })
@@ -147,8 +172,6 @@ const updateHashtags = async (hashtags) => {
       if (existingHashtag) {
         // If the hashtag already exists, increment its count
         existingHashtag.count += 1;
-        console.log("----------------------------- HERE CA MARCHE");
-        console.log(existingHashtag.count);
         await existingHashtag.save();
       } else {
         // If the hashtag doesn't exist, create a new document
@@ -424,12 +447,15 @@ export const likeTweet = async (req, res) => {
     user.stat.likeCount++;
     const hashtags = extractHashtags(tweet.body);
     for (const hashtag of hashtags) {
-      if (!user.recommandation) {
+      if (!user.recommendation) {
         break;
       }
-      user.recommandation.push(hashtag);
-      if (user.recommendations.length > 100) {
-        user.recommendations.shift();
+      if (user.recommendation.includes(hashtag.text)) {
+        continue;
+      }
+      user.recommendation.push(hashtag.text);
+      if (user.recommendation.length > 100) {
+        user.recommendation.shift();
       }
     }
     await user.save();
@@ -748,7 +774,6 @@ export const getTopHashtags = async (req, res) => {
       .select("text count"); // Sélectionne uniquement le champ count
 
     // Return the top hashtags and pagination metadata as JSON response
-    console.log(topHashtags);
     res.status(200).json({
       hashtags: topHashtags,
       pagination: {
