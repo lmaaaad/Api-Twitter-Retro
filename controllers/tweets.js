@@ -147,6 +147,8 @@ const updateHashtags = async (hashtags) => {
       if (existingHashtag) {
         // If the hashtag already exists, increment its count
         existingHashtag.count += 1;
+        console.log("----------------------------- HERE CA MARCHE");
+        console.log(existingHashtag.count);
         await existingHashtag.save();
       } else {
         // If the hashtag doesn't exist, create a new document
@@ -414,10 +416,17 @@ export const likeTweet = async (req, res) => {
         .json({ message: "Tweet already liked by the user" });
     }
 
+    if (!user) {
+      return res.status(400).json({ message: "Bad request" });
+    }
+
     user.likes.push(tweetId);
     user.stat.likeCount++;
     const hashtags = extractHashtags(tweet.body);
     for (const hashtag of hashtags) {
+      if (!user.recommandation) {
+        break;
+      }
       user.recommandation.push(hashtag);
       if (user.recommendations.length > 100) {
         user.recommendations.shift();
@@ -497,6 +506,9 @@ export const retweetTweet = async (req, res) => {
       user.stat.retweetCount++;
       const hashtags = extractHashtags(tweet.body);
       for (const hashtag of hashtags) {
+        if (!user.recommandation) {
+          break;
+        }
         user.recommandation.push(hashtag);
         if (user.recommendations.length > 100) {
           user.recommendations.shift();
@@ -699,6 +711,11 @@ export const getComments = async (req, res) => {
       startIndex + pageSize
     );
 
+    for (const tweet of lastCommentsIds) {
+      tweet.stat.view += 1;
+      await tweet.save();
+    }
+
     res.status(200).json({
       currentPage: page,
       pageSize: pageSize,
@@ -725,13 +742,13 @@ export const getTopHashtags = async (req, res) => {
     const oneWeekAgo = new Date();
     oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
 
-    const topHashtags = await Hashtag.aggregate([
-      { $match: { createdAt: { $gte: oneWeekAgo } } }, // Match hashtags created within the last week
-      { $group: { _id: "$text", count: { $sum: 1 } } }, // Group hashtags by text and calculate count
-      { $sort: { count: -1 } }, // Sort hashtags by count in descending order
-      { $limit: 10 }, // Limit results to the top 100 hashtags
-    ]);
+    const topHashtags = await Hashtag.find()
+      .sort({ count: -1 }) // Trie par ordre décroissant de count
+      .limit(10) // Limite à 10 résultats
+      .select("text count"); // Sélectionne uniquement le champ count
+
     // Return the top hashtags and pagination metadata as JSON response
+    console.log(topHashtags);
     res.status(200).json({
       hashtags: topHashtags,
       pagination: {
