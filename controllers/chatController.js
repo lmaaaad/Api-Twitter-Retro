@@ -165,18 +165,44 @@ const removeFromGroup = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Add user to Group / Leave
-// @route   PUT /api/chat/groupadd
+
+
+// @desc    Remove user from Group
+// @route   PUT /api/chat/groupleave
 // @access  Protected
+const leaveGroup = asyncHandler(async (req, res) => {
+  const { chatId } = req.body;
+  const userId = req.user._id;
+
+  const removed = await Chat.findByIdAndUpdate(
+    chatId,
+    {
+      $pull: { users: userId },
+    },
+    {
+      new: true,
+    }
+  )
+    .populate("users", "-password")
+    .populate("groupAdmin", "-password");
+
+  if (!removed) {
+    res.status(404);
+    throw new Error("Chat Not Found");
+  } else {
+    res.json(removed);
+  }
+});
+
 const addToGroup = asyncHandler(async (req, res) => {
-  const { chatId, userId } = req.body;
+  const { chatId, userIds } = req.body; // userIds is an array of user IDs
 
   // check if the requester is admin
 
   const added = await Chat.findByIdAndUpdate(
     chatId,
     {
-      $push: { users: userId },
+      $push: { users: { $each: userIds } }, // Add multiple users using $each
     },
     {
       new: true,
@@ -200,4 +226,5 @@ export {
   renameGroup,
   addToGroup,
   removeFromGroup,
+  leaveGroup,
 };
